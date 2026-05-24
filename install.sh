@@ -8,7 +8,7 @@ prefix="${PREFIX:-$HOME/.local/bin}"
 here="$(cd -P "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 mkdir -p "$prefix"
-for cmd in secret secret-add secret-paste secret-list secret-init; do
+for cmd in secret secret-add secret-paste secret-list secret-rm secret-init; do
   ln -sf "$here/bin/$cmd" "$prefix/$cmd"
 done
 
