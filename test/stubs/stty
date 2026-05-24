@@ -1,0 +1,3 @@
+#!/bin/bash
+# Stub: no-op so secret-add's stty -echo/echo works under a non-tty test stdin.
+exit 0

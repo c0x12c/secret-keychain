@@ -1,0 +1,3 @@
+#!/bin/bash
+# Stub: emit the test clipboard contents.
+printf '%s' "${SECRET_CLIP:-}"

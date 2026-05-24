@@ -1,0 +1,3 @@
+#!/bin/bash
+# Stub: consume stdin (used by secret-paste to clear the clipboard).
+cat > /dev/null

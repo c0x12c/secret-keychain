@@ -147,6 +147,21 @@ secret-add DEPLOY_KEY
 - **Prefer `secret-paste` for crown jewels.** `secret-add` passes the value to `security` as an
   argument, briefly visible in `ps`; the clipboard path avoids that.
 
+## Use it from an AI coding agent
+
+Coding agents (Claude Code, etc.) can read secrets safely without ever seeing the value in
+plaintext: they call `$(secret NAME)` inline and are blocked from storing or deleting secrets.
+See [`agent/AGENTS.md`](agent/AGENTS.md) for the rules and the Claude Code guardrails
+(`permissions.deny` + a PreToolUse gate) in [`agent/claude/`](agent/claude/).
+
+## Tests
+
+```sh
+./test/run.sh        # shellcheck + hermetic bats (stubbed Keychain) + hook tests
+```
+
+Requires [`bats-core`](https://github.com/bats-core/bats-core) (`brew install bats-core`).
+
 ## Requirements
 
 macOS only — uses the built-in `security`, `pbpaste`/`pbcopy`, and `stty`. No other dependencies.

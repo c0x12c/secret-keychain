@@ -1,0 +1,58 @@
+#!/bin/bash
+# Hermetic stub of macOS `security` for tests. File-backed at $SECRET_STORE.
+# Implements only the subcommands secret-keychain uses. Store lines: NAME<TAB>VALUE.
+set -eu
+
+store="${SECRET_STORE:?SECRET_STORE not set}"
+touch "$store"
+cmd="${1:-}"
+shift || true
+
+# get_field FLAG ARGS... -> prints the value following FLAG
+get_field() {
+  local want="$1"
+  shift
+  while [ "$#" -gt 0 ]; do
+    if [ "$1" = "$want" ]; then
+      printf '%s' "${2:-}"
+      return 0
+    fi
+    shift
+  done
+}
+
+case "$cmd" in
+  add-generic-password)
+    svc="$(get_field -s "$@")"
+    val="$(get_field -w "$@")"
+    grep -v "^${svc}	" "$store" > "$store.tmp" 2>/dev/null || true
+    mv "$store.tmp" "$store"
+    printf '%s\t%s\n' "$svc" "$val" >> "$store"
+    ;;
+  find-generic-password)
+    svc="$(get_field -s "$@")"
+    line="$(grep "^${svc}	" "$store" 2>/dev/null || true)"
+    [ -n "$line" ] || exit 1
+    printf '%s\n' "${line#*	}"
+    ;;
+  delete-generic-password)
+    svc="$(get_field -s "$@")"
+    grep -q "^${svc}	" "$store" 2>/dev/null || exit 1
+    grep -v "^${svc}	" "$store" > "$store.tmp" 2>/dev/null || true
+    mv "$store.tmp" "$store"
+    ;;
+  dump-keychain)
+    while IFS=$'\t' read -r svc _; do
+      printf '    "svce"<blob>="%s"\n' "$svc"
+    done < "$store"
+    ;;
+  show-keychain-info)
+    [ "${SECRET_KEYCHAIN_EXISTS:-1}" = "1" ] && exit 0 || exit 1
+    ;;
+  create-keychain|set-keychain-settings|list-keychains)
+    : # no-op for the stub
+    ;;
+  *)
+    : # ignore anything else
+    ;;
+esac
