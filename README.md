@@ -22,7 +22,7 @@ No account, no server, no daemon, no cost. Just the Keychain you already have, m
 ## 60-second start
 
 ```sh
-git clone https://github.com/<you>/secret-keychain.git
+git clone https://github.com/c0x12c/secret-keychain.git
 cd secret-keychain
 ./install.sh        # symlinks the commands into ~/.local/bin
 secret-init         # creates the keychain + autolock (asks for a keychain password, once)
