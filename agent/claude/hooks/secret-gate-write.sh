@@ -56,7 +56,12 @@ patterns="$patterns|(postgres|postgresql|mysql|mongodb|redis|amqp|amqps)://[^[:s
 patterns="$patterns|https?://[A-Za-z0-9._~%+-]+:[A-Za-z0-9._~%!()*+,;=-]{6,}@"
 patterns="$patterns|-----BEGIN ([A-Z]+ )?PRIVATE KEY-----"
 
-if echo "$content" | grep -qE "$patterns"; then
+# Strip $(secret NAME) substitutions before the pattern scan — same rationale
+# as secret-gate.sh: don't let the safe resolver form mask an inline credential
+# elsewhere in the same payload.
+sanitized="$(echo "$content" | sed -E 's/\$\(secret [^)]+\)/_SECRET_PLACEHOLDER_/g')"
+
+if echo "$sanitized" | grep -qE "$patterns"; then
   echo '{"decision":"block","reason":"This write contains a secret-shaped value. Do not commit secrets to files. Store the value once via secret-add / secret-paste, then reference it at runtime with $(secret NAME)."}'
   exit 2
 fi

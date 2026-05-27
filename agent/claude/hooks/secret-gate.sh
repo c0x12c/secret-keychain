@@ -39,10 +39,11 @@ if echo "$cmd" | grep -qE '(^|[;&|[:space:]])secret-(add|paste|rm|upgrade)([[:sp
   exit 2
 fi
 
-# 2. Allow commands that resolve through $(secret ...) — the safe path.
-#    Done before pattern scan so a curl with a Bearer $(secret X) header passes
-#    even if the surrounding command contains URL-shaped strings.
-echo "$cmd" | grep -q '\$(secret ' && exit 0
+# 2. Strip $(secret NAME) substitutions before the pattern scan. Replace each
+#    with a placeholder so the surrounding command is still checked: a command
+#    that mixes the safe resolver form with an inline credential (e.g.
+#    `curl -u admin:realpass https://api.$(secret DOMAIN)/x`) must still block.
+sanitized="$(echo "$cmd" | sed -E 's/\$\(secret [^)]+\)/_SECRET_PLACEHOLDER_/g')"
 
 # 3. Block inline secret-shaped strings — force the resolver instead.
 #    Coverage: vendor API keys (Stripe, GitHub, npm, HF, Slack, Notion, SendGrid,
@@ -70,7 +71,7 @@ patterns="$patterns|https?://[A-Za-z0-9._~%+-]+:[A-Za-z0-9._~%!()*+,;=-]{6,}@"
 patterns="$patterns|(^|[[:space:]])-u[[:space:]]+[^[:space:]]+:[^[:space:]]"
 patterns="$patterns|(^|[[:space:]])--user[[:space:]]+[^[:space:]]+:[^[:space:]]"
 
-if echo "$cmd" | grep -qE "$patterns"; then
+if echo "$sanitized" | grep -qE "$patterns"; then
   echo '{"decision":"block","reason":"Inline secret detected. Use $(secret NAME) instead, e.g. curl -H \"Authorization: Bearer $(secret YOUR_KEY)\" ... . Run secret-list for available names."}'
   exit 2
 fi

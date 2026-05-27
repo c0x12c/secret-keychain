@@ -195,6 +195,19 @@ _allow() {
   _allow 'DATABASE_URL="postgres://u:$(secret DB_PASS)@db/app" ./migrate.sh'
 }
 
+@test "adversarial: \$(secret …) does not mask an inline credential elsewhere" {
+  # Real bypass shape: mix the safe resolver form with an inline secret. The
+  # gate must still block the inline credential.
+  _block 'curl -u admin:s3cret-p4ss-word https://api.$(secret DOMAIN)/v1/x'
+  _block 'curl -H "Authorization: Bearer ghp_0123456789012345678901234567890123" https://$(secret HOST)/x'
+}
+
+@test "adversarial Write: \$(secret …) does not mask an inline credential in file content" {
+  _block_write "$(printf '%s\n' \
+    'TOKEN_FROM_AGENT="$(secret GITHUB_TOKEN)"' \
+    'LEGACY_KEY=ghp_0123456789012345678901234567890123')"
+}
+
 # ─── 6. File-write gate adversarial matrix ───────────────────────────────────
 
 _block_write() {
