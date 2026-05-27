@@ -32,19 +32,26 @@ If a secret is missing, **ask the human to add it** — do not run `secret-add`.
 
 ## What's enforced vs. what's etiquette
 
-Two layers back the rules above, installed from this directory:
+Three layers back the rules above, installed from this directory:
 
 - **`permissions.deny`** (in `settings.snippet.json`) — a hard wall: the agent
   cannot run `secret-add` / `secret-paste` / `secret-rm` at all.
 - **`hooks/secret-gate.sh`** (PreToolUse on Bash) — blocks the mutation commands
   with an explanatory message, and blocks commands containing an inline
   secret-shaped string, steering you to `$(secret NAME)`.
+- **`hooks/secret-gate-write.sh`** (PreToolUse on Edit | Write | MultiEdit) —
+  blocks file writes whose content carries a secret-shaped value. Closes the
+  obvious gap where an agent would otherwise land `STRIPE_KEY=sk_live_…` in
+  `.env` or source without ever touching Bash.
 
-**These are friction, not a guarantee.** The gate catches common idioms only — it
-will not catch a secret written to a temp file and re-read, or a non-standard token
-shape (e.g. a plain DB password). Treat "don't surface secret values" as a rule you
-follow, not a net that will always catch you. Output redaction is *not* possible
-after the fact: once a value is printed, it is in the transcript.
+**These are friction, not a guarantee.** The gates catch common idioms only —
+they will not catch a secret split across two writes, a custom token shape
+(generic DB password, in-house auth string), or a value re-read from a file the
+agent wrote earlier. Treat "don't surface secret values" as a rule you follow,
+not a net that will always catch you. Output redaction is *not* possible after
+the fact: once a value is printed, it is in the transcript. Both hooks fail
+loud (stderr warning) when `jq` is missing, so a degraded guardrail is visible
+rather than silent.
 
 ## Install (Claude Code)
 
@@ -53,13 +60,15 @@ From the repo root:
 ```sh
 # project scope (shared with your team, git-committed)
 mkdir -p .claude/hooks
-cp agent/claude/hooks/secret-gate.sh .claude/hooks/
+cp agent/claude/hooks/secret-gate.sh        .claude/hooks/
+cp agent/claude/hooks/secret-gate-write.sh  .claude/hooks/
 # then merge agent/claude/settings.snippet.json into .claude/settings.json
 ```
 
-The snippet uses `$CLAUDE_PROJECT_DIR/.claude/hooks/secret-gate.sh`; for user scope
-(`~/.claude/settings.json`) point the `command` at an absolute path instead.
-Requires `jq` on PATH (the gate no-ops without it).
+The snippet uses `$CLAUDE_PROJECT_DIR/.claude/hooks/…`; for user scope
+(`~/.claude/settings.json`) point each `command` at an absolute path instead.
+Both hooks require `jq` on `PATH` — without it they print a warning to stderr and
+exit 0 (degraded mode, visible to the user).
 
 ## Other agents
 
