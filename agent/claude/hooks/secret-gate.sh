@@ -40,10 +40,12 @@ if echo "$cmd" | grep -qE '(^|[;&|[:space:]])secret-(add|paste|rm|upgrade)([[:sp
 fi
 
 # 2. Strip $(secret NAME) substitutions before the pattern scan. Replace each
-#    with a placeholder so the surrounding command is still checked: a command
-#    that mixes the safe resolver form with an inline credential (e.g.
-#    `curl -u admin:realpass https://api.$(secret DOMAIN)/x`) must still block.
-sanitized="$(echo "$cmd" | sed -E 's/\$\(secret [^)]+\)/_SECRET_PLACEHOLDER_/g')"
+#    with a single space — a non-credential character that also breaks any
+#    [^space/@]+ capture (so `postgres://u:$(secret PASS)@host` doesn't read
+#    as a URI-with-password shape after sanitization). The surrounding command
+#    is still scanned, so a real inline credential elsewhere (e.g.
+#    `curl -u admin:realpass https://$(secret HOST)/x`) still blocks.
+sanitized="$(echo "$cmd" | sed -E 's/\$\(secret [^)]+\)/ /g')"
 
 # 3. Block inline secret-shaped strings — force the resolver instead.
 #    Coverage: vendor API keys (Stripe, GitHub, npm, HF, Slack, Notion, SendGrid,

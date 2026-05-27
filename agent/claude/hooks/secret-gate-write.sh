@@ -56,10 +56,11 @@ patterns="$patterns|(postgres|postgresql|mysql|mongodb|redis|amqp|amqps)://[^[:s
 patterns="$patterns|https?://[A-Za-z0-9._~%+-]+:[A-Za-z0-9._~%!()*+,;=-]{6,}@"
 patterns="$patterns|-----BEGIN ([A-Z]+ )?PRIVATE KEY-----"
 
-# Strip $(secret NAME) substitutions before the pattern scan — same rationale
-# as secret-gate.sh: don't let the safe resolver form mask an inline credential
-# elsewhere in the same payload.
-sanitized="$(echo "$content" | sed -E 's/\$\(secret [^)]+\)/_SECRET_PLACEHOLDER_/g')"
+# Strip $(secret NAME) substitutions before the pattern scan — replace with a
+# single space so the resolver form is invisible to credential shapes (incl.
+# conn URIs) while inline creds elsewhere still match. Same approach as
+# secret-gate.sh; see that file for the rationale.
+sanitized="$(echo "$content" | sed -E 's/\$\(secret [^)]+\)/ /g')"
 
 if echo "$sanitized" | grep -qE "$patterns"; then
   echo '{"decision":"block","reason":"This write contains a secret-shaped value. Do not commit secrets to files. Store the value once via secret-add / secret-paste, then reference it at runtime with $(secret NAME)."}'
