@@ -27,7 +27,10 @@ if ! command -v jq >/dev/null 2>&1; then
   exit 0
 fi
 
-cmd="$(cat | jq -r '.tool_input.command // empty')"
+# Defensive: a malformed JSON payload would crash jq under `set -eu`, and Claude
+# Code interprets any non-zero non-2 exit as "block this tool call". Swallow the
+# parse error and fall through to allow — a broken gate must not become a deny-all.
+cmd="$(cat | jq -r '.tool_input.command // empty' 2>/dev/null || true)"
 [ -z "$cmd" ] && exit 0
 
 # 1. Block secret mutations — storing and removing are the human's job.

@@ -249,6 +249,24 @@ _block_write() {
   [ "$reason" != "null" ]
 }
 
+@test "hook contract: malformed JSON payload -> allow, never crash" {
+  # If the gate exits non-zero (because jq crashed on bad JSON), Claude Code
+  # interprets that as "block this tool call" — a broken gate would block
+  # every Bash/Edit/Write attempt. Defensive: swallow jq errors and allow.
+  echo 'this is not json at all { ] [' > "$BATS_TEST_TMPDIR/p.json"
+  run bash "$GATE" < "$BATS_TEST_TMPDIR/p.json"
+  [ "$status" -eq 0 ]
+  run bash "$GATE_WRITE" < "$BATS_TEST_TMPDIR/p.json"
+  [ "$status" -eq 0 ]
+}
+
+@test "hook contract: empty stdin -> allow, never crash" {
+  run bash "$GATE" < /dev/null
+  [ "$status" -eq 0 ]
+  run bash "$GATE_WRITE" < /dev/null
+  [ "$status" -eq 0 ]
+}
+
 @test "hook contract: Write gate accepts MultiEdit shape too" {
   # The Write hook scans content + new_string + edits[].new_string. Verify the
   # last branch — a MultiEdit with multiple edits, only one of which is bad.

@@ -22,6 +22,9 @@ fi
 #   Write:     .tool_input.content
 #   Edit:      .tool_input.new_string  (also old_string — skip; we only care about what lands on disk)
 #   MultiEdit: .tool_input.edits[].new_string
+# Defensive: a malformed payload would crash jq under `set -eu`, and Claude Code
+# interprets any non-zero non-2 exit as "block this tool call". Swallow the parse
+# error and fall through to allow — a broken gate must not become a deny-all.
 payload="$(cat)"
 content="$(printf '%s' "$payload" | jq -r '
   [
@@ -29,7 +32,7 @@ content="$(printf '%s' "$payload" | jq -r '
     (.tool_input.new_string // empty),
     (.tool_input.edits // [] | map(.new_string // empty) | join("\n"))
   ] | join("\n")
-')"
+' 2>/dev/null || true)"
 [ -z "$content" ] && exit 0
 
 # Same pattern set as secret-gate.sh. Keep these in sync.
