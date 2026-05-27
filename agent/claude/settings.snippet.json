@@ -12,7 +12,9 @@
       "Bash(secret-paste)",
       "Bash(secret-paste *)",
       "Bash(secret-rm)",
-      "Bash(secret-rm *)"
+      "Bash(secret-rm *)",
+      "Bash(secret-upgrade)",
+      "Bash(secret-upgrade *)"
     ]
   },
   "hooks": {
@@ -23,6 +25,15 @@
           {
             "type": "command",
             "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/secret-gate.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/secret-gate-write.sh"
           }
         ]
       }

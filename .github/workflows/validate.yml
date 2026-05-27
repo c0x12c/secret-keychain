@@ -1,0 +1,35 @@
+name: Validate
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  shellcheck:
+    name: Shellcheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run shellcheck
+        uses: ludeeus/action-shellcheck@master
+        env:
+          SHELLCHECK_OPTS: -x
+        with:
+          scandir: .
+          ignore_paths: .git
+
+  bats:
+    name: Bats (unit + hooks)
+    # macOS so the bats suite runs on the same OS the tool targets, even though
+    # we stub `security` for hermetic tests. The live integration suite stays
+    # opt-in via RUN_LIVE=1 and is not exercised in CI (would mutate real
+    # keychains on the runner).
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install bats-core + jq
+        run: brew install bats-core jq
+      - name: Run hermetic test suite
+        run: test/run.sh

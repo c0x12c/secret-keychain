@@ -44,6 +44,7 @@ Make sure your install dir (`~/.local/bin`) is on `PATH`. Done — you're ready 
 | List the names you've stored | `secret-list` |
 | Delete a secret | `secret-rm NAME` |
 | Set up the keychain (first run) | `secret-init` |
+| Upgrade to the latest version | `secret-upgrade` |
 
 That's the entire surface. Everything below is just recipes for the middle column.
 
@@ -115,6 +116,17 @@ secret GH_TOKEN >/dev/null 2>&1 && echo "have it" || echo "missing"
 secret-rm GH_TOKEN
 ```
 
+### …upgrade to the latest version?
+
+```sh
+secret-upgrade                  # fast-forward pull + re-link the symlinks
+```
+
+`secret-upgrade` runs `git pull --ff-only` against the clone the tool was installed
+from, then re-runs `install.sh` so new commands appear. It refuses on a dirty
+working tree or a diverged branch — resolve those by hand. Tarball installs
+(no `.git/` directory) must re-clone manually.
+
 ### …use a separate keychain (e.g. work vs personal)?
 
 Set `SECRET_KEYCHAIN` and run `secret-init` once for it. Every command then targets it:
@@ -138,21 +150,42 @@ secret-add DEPLOY_KEY
 ## Why it's safe
 
 - **Encrypted at rest.** Secrets live in the macOS Keychain, not in plaintext files.
-- **Out of your history.** You only ever type `$(secret NAME)` — the value resolves in the
-  child process and is never recorded by your shell.
+- **Out of your history when read.** `$(secret NAME)` resolves in the child process — the
+  value never enters your shell history or environment. (`secret-add` still passes the value
+  to `security` as `-w VALUE`, so it is briefly visible in `ps` during storage — prefer
+  `secret-paste` for crown jewels.)
 - **Isolated.** A dedicated keychain (`ai.keychain`) with its own password, separate from your
   login keychain, so a script that reads secrets can't silently reach everything you own.
 - **Auto re-locks.** After `SECRET_AUTOLOCK_SECONDS` of idle time, or on sleep — macOS prompts
   to unlock on the next read.
-- **Prefer `secret-paste` for crown jewels.** `secret-add` passes the value to `security` as an
-  argument, briefly visible in `ps`; the clipboard path avoids that.
+
+### Known limits — read these
+
+- **Universal Clipboard.** `secret-paste` clears the local clipboard via `pbcopy </dev/null`,
+  but if Handoff / Universal Clipboard is enabled the value has already replicated to other
+  Apple devices' clipboards. Disable Handoff for the run, or copy a throwaway string after.
+- **`unset` is not zeroing.** `secret-add` clears `$value` from the shell's symbol table on
+  exit, but does not zero the memory pages — the kernel handles that on process exit.
+- **Single-user namespace.** Every command in this repo shares one keychain (default
+  `ai.keychain`). Use `SECRET_KEYCHAIN=work.keychain` to split work/personal. Per-repo
+  namespaces are not yet a built-in feature.
 
 ## Use it from an AI coding agent
 
 Coding agents (Claude Code, etc.) can read secrets safely without ever seeing the value in
 plaintext: they call `$(secret NAME)` inline and are blocked from storing or deleting secrets.
-See [`agent/AGENTS.md`](agent/AGENTS.md) for the rules and the Claude Code guardrails
-(`permissions.deny` + a PreToolUse gate) in [`agent/claude/`](agent/claude/).
+See [`agent/AGENTS.md`](agent/AGENTS.md) for the rules. The Claude Code guardrails in
+[`agent/claude/`](agent/claude/) ship as three layers:
+
+- `permissions.deny` — hard wall against `secret-add` / `secret-paste` / `secret-rm`.
+- `secret-gate.sh` — PreToolUse on `Bash`: blocks mutations and inline secret-shaped strings
+  in commands (Stripe, GitHub, npm, JWT, AWS, GCP, Anthropic, OpenAI, connection URIs with
+  embedded passwords, curl `-u user:secret`).
+- `secret-gate-write.sh` — PreToolUse on `Edit | Write | MultiEdit`: same patterns, applied to
+  file contents so an agent can't quietly land a secret in `.env` or source.
+
+Both hooks fail loud (stderr warning) if `jq` isn't on `PATH`, so you know when the
+guardrail is degraded rather than silently no-opping.
 
 ## Tests
 
