@@ -22,6 +22,8 @@ echo "== unit =="
 bats test/unit
 echo "== hooks =="
 bats test/hooks
+echo "== integration (scenarios, hermetic) =="
+bats test/integration/scenarios.bats
 
 # Live integration mutates the real security database (creates/deletes a
 # throwaway keychain), so it is opt-in. Enable with RUN_LIVE=1.
