@@ -2,15 +2,15 @@
 
 Thanks for your interest. This tool is intentionally tiny (~80 lines of bash plus
 a Claude Code agent kit), and the bar for additions is that they make it *safer*
-or *smaller* — not bigger.
+or *smaller* - not bigger.
 
 ## Ground rules
 
-- **One concern per PR.** Hook coverage, a new command, a doc fix — pick one.
+- **One concern per PR.** Hook coverage, a new command, a doc fix - pick one.
 - **Tests first.** Every command and every gate has hermetic bats coverage. A
   patch without a test will be asked for one.
 - **No secrets in the repo.** `.env*` is gitignored. Never commit real tokens,
-  even as fixtures — use the synthetic shapes already in `test/`.
+  even as fixtures - use the synthetic shapes already in `test/`.
 - **Don't break the build.** `test/run.sh` must stay green. CI runs the same
   checks on every PR (shellcheck + bats on macOS).
 - **Atomic commits.** Each commit passes tests on its own. Squash noise locally
@@ -28,7 +28,7 @@ cd secret-keychain
 test/run.sh
 ```
 
-The hermetic suite never touches your real Keychain — `test/stubs/security`
+The hermetic suite never touches your real Keychain - `test/stubs/security`
 swaps `security(1)` for a file-backed stub. The live e2e (`RUN_LIVE=1
 test/run.sh`) does mutate the real `security` database (creates and tears down
 a throwaway keychain); run it before shipping a change to the `bin/` commands
@@ -38,7 +38,7 @@ or `bin/secret-init`.
 
 | Path | What it is |
 |---|---|
-| `bin/` | The six commands. Bash, `set -euo pipefail`, one concern each. |
+| `bin/` | The commands. Bash, `set -euo pipefail`, one concern each. |
 | `agent/AGENTS.md` | Behavioral contract for AI agents. |
 | `agent/claude/hooks/` | PreToolUse gates (Bash + Edit/Write/MultiEdit). |
 | `agent/claude/settings.snippet.json` | Permissions + hook registration. |
@@ -57,3 +57,24 @@ or `bin/secret-init`.
 If a change relaxes a gate, widens a permission, or removes a guardrail,
 explicitly call out the rationale in the PR description. Hardening changes
 (new pattern, narrower allowlist, fail-loud rewording) need only a test.
+
+## Extending `secret-config`
+
+`secret-config` currently exposes one positional argument (the autolock
+duration). When a second configurable knob actually has a concrete use case:
+
+- **No secret values, ever.** Any new key holds a name, a duration, or a path -
+  never a token, password, or API key. Secrets live in the keychain. The script
+  header comment encodes this rule; preserve it.
+- **Caps are security knobs.** The 15m default cap and 4h hard cap exist to
+  bound the agent blast radius. Don't relax them without naming the threat
+  model in the PR description.
+- **Refactor to subcommands then, not now.** The positional form
+  (`secret-config <duration>`) is the v1 shorthand for "set the timeout". A
+  second key is the trigger to introduce a `git config`-style surface
+  (`secret-config set <key> <value>` / `get` / `list`). Keep the existing
+  positional form working as a shorthand for `set timeout`.
+- **Update the agent guardrails.** Any new subcommand that changes a security
+  property must be added to `agent/claude/hooks/secret-gate.sh` (mutation
+  alternation) and `agent/claude/settings.snippet.json` deny list, with a
+  matching bats test in `test/hooks/`.

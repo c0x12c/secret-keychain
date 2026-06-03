@@ -1,5 +1,5 @@
 {
-  "//": "secret-keychain agent guardrails — merge into .claude/settings.json (project) or ~/.claude/settings.json (user). See agent/AGENTS.md.",
+  "//": "secret-keychain agent guardrails - merge into .claude/settings.json (project) or ~/.claude/settings.json (user). See agent/AGENTS.md.",
   "permissions": {
     "allow": [
       "Bash(secret)",
@@ -14,7 +14,9 @@
       "Bash(secret-rm)",
       "Bash(secret-rm *)",
       "Bash(secret-upgrade)",
-      "Bash(secret-upgrade *)"
+      "Bash(secret-upgrade *)",
+      "Bash(secret-config)",
+      "Bash(secret-config *)"
     ]
   },
   "hooks": {

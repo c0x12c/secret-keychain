@@ -7,12 +7,12 @@
 # not the single-command behavior already covered in test/unit/.
 #
 # Layout:
-#   1. Lifecycle  — add → list → read → rotate → rm chain
-#   2. Threat surface — secrets stay out of shell history / argv / transcripts
-#   3. Special-character round-trip — secrets with newlines, quotes, $, unicode
-#   4. Keychain isolation — SECRET_KEYCHAIN routes per-call without bleed
-#   5. Adversarial gate matrix — real bad-idioms an agent might emit naturally
-#   6. Hook contract — full Claude Code JSON envelope round-trip
+#   1. Lifecycle  - add → list → read → rotate → rm chain
+#   2. Threat surface - secrets stay out of shell history / argv / transcripts
+#   3. Special-character round-trip - secrets with newlines, quotes, $, unicode
+#   4. Keychain isolation - SECRET_KEYCHAIN routes per-call without bleed
+#   5. Adversarial gate matrix - real bad-idioms an agent might emit naturally
+#   6. Hook contract - full Claude Code JSON envelope round-trip
 load '../helpers/setup'
 
 setup() {
@@ -95,7 +95,7 @@ teardown() { teardown_secret_env; }
   echo "p4ss-w0rd" | secret-add DB_PASS
 
   # Run a child that uses the secret as a single-command env, then a sibling
-  # child that just lists its environment — the value must not appear.
+  # child that just lists its environment - the value must not appear.
   DB_URL="$(secret DB_PASS)" bash -c 'true'   # use-then-discard form
   run bash -c 'env'
   [[ "$output" != *"p4ss-w0rd"* ]]
@@ -103,7 +103,7 @@ teardown() { teardown_secret_env; }
 }
 
 @test "threat: secret-list never emits a value, even for long secrets" {
-  # README claim: "secret-list prints names only — never values".
+  # README claim: "secret-list prints names only - never values".
   long_value="$(printf 'A%.0s' $(seq 1 200))xyz-marker"
   printf '%s\n' "$long_value" | secret-add LONG_KEY
 
@@ -264,7 +264,7 @@ _block_write() {
 
 @test "hook contract: malformed JSON payload -> allow, never crash" {
   # If the gate exits non-zero (because jq crashed on bad JSON), Claude Code
-  # interprets that as "block this tool call" — a broken gate would block
+  # interprets that as "block this tool call" - a broken gate would block
   # every Bash/Edit/Write attempt. Defensive: swallow jq errors and allow.
   echo 'this is not json at all { ] [' > "$BATS_TEST_TMPDIR/p.json"
   run bash "$GATE" < "$BATS_TEST_TMPDIR/p.json"
@@ -282,7 +282,7 @@ _block_write() {
 
 @test "hook contract: Write gate accepts MultiEdit shape too" {
   # The Write hook scans content + new_string + edits[].new_string. Verify the
-  # last branch — a MultiEdit with multiple edits, only one of which is bad.
+  # last branch - a MultiEdit with multiple edits, only one of which is bad.
   jq -n '{tool_input: {edits: [
     {new_string: "// harmless comment"},
     {new_string: "AUTH=ghp_0123456789012345678901234567890123"}

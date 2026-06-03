@@ -15,6 +15,6 @@ done
 echo "linked secret-* into $prefix"
 case ":$PATH:" in
   *":$prefix:"*) ;;
-  *) echo "note: $prefix is not on your PATH — add it, e.g. export PATH=\"$prefix:\$PATH\"" >&2 ;;
+  *) echo "note: $prefix is not on your PATH - add it, e.g. export PATH=\"$prefix:\$PATH\"" >&2 ;;
 esac
 echo "next: run 'secret-init' once to create the keychain"

@@ -38,6 +38,13 @@ payload() {
   [[ "$output" == *"human-only"* ]]
 }
 
+@test "blocks secret-config (agent must not change cache duration)" {
+  payload "secret-config 1h --force"
+  run bash "$GATE" < "$BATS_TEST_TMPDIR/p.json"
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"human-only"* ]]
+}
+
 @test "allows secret read and secret-list" {
   payload "secret GITHUB_TOKEN"
   run bash "$GATE" < "$BATS_TEST_TMPDIR/p.json"

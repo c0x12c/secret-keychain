@@ -1,9 +1,9 @@
 # secret-keychain
 
-**Encrypted, name-addressable secrets for your terminal — backed by the macOS Keychain, in ~80 lines of auditable bash.**
+**Encrypted, name-addressable secrets for your terminal - backed by the macOS Keychain, in ~80 lines of auditable bash.**
 
 Stop pasting API keys into `.env` files and `export` lines. Store a secret once, under a
-name, then drop it into any command — the value is read from the encrypted Keychain at call
+name, then drop it into any command - the value is read from the encrypted Keychain at call
 time and handed straight to the process. It never lands in your shell history, your
 environment, or a file on disk.
 
@@ -11,7 +11,7 @@ environment, or a file on disk.
 # store it once (hidden prompt)
 secret-add GITHUB_TOKEN
 
-# use it anywhere — only the *name* is ever typed
+# use it anywhere - only the *name* is ever typed
 curl -H "Authorization: Bearer $(secret GITHUB_TOKEN)" https://api.github.com/user
 ```
 
@@ -28,7 +28,7 @@ cd secret-keychain
 secret-init         # creates the keychain + autolock (asks for a keychain password, once)
 ```
 
-Make sure your install dir (`~/.local/bin`) is on `PATH`. Done — you're ready to store secrets.
+Make sure your install dir (`~/.local/bin`) is on `PATH`. Done - you're ready to store secrets.
 
 ---
 
@@ -44,6 +44,8 @@ Make sure your install dir (`~/.local/bin`) is on `PATH`. Done — you're ready 
 | List the names you've stored | `secret-list` |
 | Delete a secret | `secret-rm NAME` |
 | Set up the keychain (first run) | `secret-init` |
+| Change the autolock duration | `secret-config <duration>` |
+| Show the current autolock duration | `secret-config --show` |
 | Upgrade to the latest version | `secret-upgrade` |
 
 That's the entire surface. Everything below is just recipes for the middle column.
@@ -59,14 +61,14 @@ That's the entire surface. Everything below is just recipes for the middle colum
 secret-add STRIPE_PROD          # prompts; your typing is not echoed
 ```
 
-**From the clipboard** — preferred for high-value keys, because the value never appears as a
+**From the clipboard** - preferred for high-value keys, because the value never appears as a
 command-line argument:
 ```sh
 # copy the secret to your clipboard first (Cmd-C), then:
 secret-paste STRIPE_PROD        # stores it and clears your clipboard
 ```
 
-**Rotate / replace** an existing one — same command, it overwrites:
+**Rotate / replace** an existing one - same command, it overwrites:
 ```sh
 secret-add STRIPE_PROD
 ```
@@ -101,7 +103,7 @@ token="$(secret GH_TOKEN)"
 ### …see what I've stored?
 
 ```sh
-secret-list                     # prints names only — never values
+secret-list                     # prints names only - never values
 ```
 
 ### …check whether a secret exists?
@@ -116,6 +118,30 @@ secret GH_TOKEN >/dev/null 2>&1 && echo "have it" || echo "missing"
 secret-rm GH_TOKEN
 ```
 
+### …change how long the keychain stays unlocked between prompts?
+
+Use `secret-config` to set the autolock timeout without re-running `secret-init`:
+
+```sh
+secret-config 10m            # 10 minutes - fewer password prompts during a session
+secret-config --show         # print the current timeout
+secret-config 1h --force     # >15m requires --force (logged with a reason)
+```
+
+Default cap is **15 minutes**. `--force` allows up to **4 hours** and writes one
+line to `~/.claude/state/secret-config.log` (timestamp, user, previous → new,
+reason - provide it via `SECRET_FORCE_REASON=...` or the interactive prompt).
+Above 4 hours is always rejected; `0` is rejected by design.
+
+Longer caches reduce password prompts but widen the window in which a
+prompt-injection or a compromised tool output can fetch secrets without
+re-prompting. The cap is a security knob, not a UX knob.
+
+Every `secret <NAME>` fetch is also appended to
+`~/.claude/state/secret-fetch.log` (name, parent PID, parent command - **never
+the value**). The append is best-effort; a failed log write never breaks the
+fetch.
+
 ### …upgrade to the latest version?
 
 ```sh
@@ -124,7 +150,7 @@ secret-upgrade                  # fast-forward pull + re-link the symlinks
 
 `secret-upgrade` runs `git pull --ff-only` against the clone the tool was installed
 from, then re-runs `install.sh` so new commands appear. It refuses on a dirty
-working tree or a diverged branch — resolve those by hand. Tarball installs
+working tree or a diverged branch - resolve those by hand. Tarball installs
 (no `.git/` directory) must re-clone manually.
 
 ### …use a separate keychain (e.g. work vs personal)?
@@ -143,29 +169,35 @@ secret-add DEPLOY_KEY
 | Variable | Default | Purpose |
 |---|---|---|
 | `SECRET_KEYCHAIN` | `ai.keychain` | Keychain name used by every command. |
-| `SECRET_AUTOLOCK_SECONDS` | `300` | Idle/sleep autolock timeout, applied by `secret-init`. |
+| `SECRET_AUTOLOCK_SECONDS` | `300` | Initial autolock timeout applied by `secret-init`. After setup, change it with `secret-config <duration>`. |
+| `SECRET_STATE_DIR` | `~/.claude/state` | Where `secret` writes the per-fetch audit log and `secret-config` writes the `--force` log. |
+| `SECRET_FORCE_REASON` | _(unset)_ | Reason recorded by `secret-config <dur> --force`. If unset and stdin is a TTY, the script prompts; otherwise the log records `unspecified`. |
 
 ---
 
 ## Why it's safe
 
 - **Encrypted at rest.** Secrets live in the macOS Keychain, not in plaintext files.
-- **Out of your history when read.** `$(secret NAME)` resolves in the child process — the
+- **Out of your history when read.** `$(secret NAME)` resolves in the child process - the
   value never enters your shell history or environment. (`secret-add` still passes the value
-  to `security` as `-w VALUE`, so it is briefly visible in `ps` during storage — prefer
+  to `security` as `-w VALUE`, so it is briefly visible in `ps` during storage - prefer
   `secret-paste` for crown jewels.)
 - **Isolated.** A dedicated keychain (`ai.keychain`) with its own password, separate from your
   login keychain, so a script that reads secrets can't silently reach everything you own.
-- **Auto re-locks.** After `SECRET_AUTOLOCK_SECONDS` of idle time, or on sleep — macOS prompts
-  to unlock on the next read.
+- **Auto re-locks.** After the configured timeout of idle time, or on sleep - macOS prompts
+  to unlock on the next read. Default is 5 minutes; `secret-config` adjusts it within a 15m
+  cap (up to 4h with `--force`, logged with a reason).
+- **Every fetch is audited.** `secret <NAME>` appends one line to
+  `~/.claude/state/secret-fetch.log`: timestamp, name, parent PID, parent command. The value
+  is never written. Useful for "what did the agent pull while the cache was open?"
 
-### Known limits — read these
+### Known limits - read these
 
 - **Universal Clipboard.** `secret-paste` clears the local clipboard via `pbcopy </dev/null`,
   but if Handoff / Universal Clipboard is enabled the value has already replicated to other
   Apple devices' clipboards. Disable Handoff for the run, or copy a throwaway string after.
 - **`unset` is not zeroing.** `secret-add` clears `$value` from the shell's symbol table on
-  exit, but does not zero the memory pages — the kernel handles that on process exit.
+  exit, but does not zero the memory pages - the kernel handles that on process exit.
 - **Single-user namespace.** Every command in this repo shares one keychain (default
   `ai.keychain`). Use `SECRET_KEYCHAIN=work.keychain` to split work/personal. Per-repo
   namespaces are not yet a built-in feature.
@@ -177,11 +209,11 @@ plaintext: they call `$(secret NAME)` inline and are blocked from storing or del
 See [`agent/AGENTS.md`](agent/AGENTS.md) for the rules. The Claude Code guardrails in
 [`agent/claude/`](agent/claude/) ship as three layers:
 
-- `permissions.deny` — hard wall against `secret-add` / `secret-paste` / `secret-rm`.
-- `secret-gate.sh` — PreToolUse on `Bash`: blocks mutations and inline secret-shaped strings
+- `permissions.deny` - hard wall against `secret-add` / `secret-paste` / `secret-rm`.
+- `secret-gate.sh` - PreToolUse on `Bash`: blocks mutations and inline secret-shaped strings
   in commands (Stripe, GitHub, npm, JWT, AWS, GCP, Anthropic, OpenAI, connection URIs with
   embedded passwords, curl `-u user:secret`).
-- `secret-gate-write.sh` — PreToolUse on `Edit | Write | MultiEdit`: same patterns, applied to
+- `secret-gate-write.sh` - PreToolUse on `Edit | Write | MultiEdit`: same patterns, applied to
   file contents so an agent can't quietly land a secret in `.env` or source.
 
 Both hooks fail loud (stderr warning) if `jq` isn't on `PATH`, so you know when the
@@ -197,8 +229,8 @@ Requires [`bats-core`](https://github.com/bats-core/bats-core) (`brew install ba
 
 ## Requirements
 
-macOS only — uses the built-in `security`, `pbpaste`/`pbcopy`, and `stty`. No other dependencies.
+macOS only - uses the built-in `security`, `pbpaste`/`pbcopy`, and `stty`. No other dependencies.
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+MIT - see [LICENSE](LICENSE).
