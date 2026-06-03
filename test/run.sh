@@ -10,11 +10,11 @@ if command -v shellcheck >/dev/null 2>&1; then
   shellcheck bin/* install.sh agent/claude/hooks/*.sh test/stubs/* test/run.sh test/integration/*.sh
   echo "ok"
 else
-  echo "== shellcheck (skipped — not installed) =="
+  echo "== shellcheck (skipped - not installed) =="
 fi
 
 if ! command -v bats >/dev/null 2>&1; then
-  echo "bats not found — install with: brew install bats-core" >&2
+  echo "bats not found - install with: brew install bats-core" >&2
   exit 1
 fi
 
@@ -31,5 +31,5 @@ if [ "${RUN_LIVE:-}" = "1" ]; then
   echo "== integration (live) =="
   bash test/integration/live.sh
 else
-  echo "== integration (live) — skipped (set RUN_LIVE=1 to run) =="
+  echo "== integration (live) - skipped (set RUN_LIVE=1 to run) =="
 fi

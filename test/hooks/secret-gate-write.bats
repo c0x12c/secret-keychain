@@ -21,7 +21,7 @@ multiedit_payload() {
 }
 
 @test "Write: blocks .env with anthropic secret" {
-  # Use the Anthropic shape rather than Stripe/GitHub — GitHub Push Protection
+  # Use the Anthropic shape rather than Stripe/GitHub - GitHub Push Protection
   # validates Stripe/GitHub key shapes regardless of payload entropy and would
   # reject this commit. Anthropic isn't on the partner-scanner list.
   write_payload "ANTHROPIC_API_KEY=sk-ant-api03-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"

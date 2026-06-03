@@ -14,17 +14,17 @@ set -eu
 [ "${BYPASS_SECRET_GATE_WRITE:-0}" = "1" ] && exit 0
 
 if ! command -v jq >/dev/null 2>&1; then
-  echo "secret-gate-write: jq not on PATH — guardrail DISABLED. Install jq (brew install jq) or set BYPASS_SECRET_GATE_WRITE=1 to silence." >&2
+  echo "secret-gate-write: jq not on PATH - guardrail DISABLED. Install jq (brew install jq) or set BYPASS_SECRET_GATE_WRITE=1 to silence." >&2
   exit 0
 fi
 
 # Gather the content payloads from any of Write/Edit/MultiEdit shapes:
 #   Write:     .tool_input.content
-#   Edit:      .tool_input.new_string  (also old_string — skip; we only care about what lands on disk)
+#   Edit:      .tool_input.new_string  (also old_string - skip; we only care about what lands on disk)
 #   MultiEdit: .tool_input.edits[].new_string
 # Defensive: a malformed payload would crash jq under `set -eu`, and Claude Code
 # interprets any non-zero non-2 exit as "block this tool call". Swallow the parse
-# error and fall through to allow — a broken gate must not become a deny-all.
+# error and fall through to allow - a broken gate must not become a deny-all.
 payload="$(cat)"
 content="$(printf '%s' "$payload" | jq -r '
   [
@@ -56,7 +56,7 @@ patterns="$patterns|(postgres|postgresql|mysql|mongodb|redis|amqp|amqps)://[^[:s
 patterns="$patterns|https?://[A-Za-z0-9._~%+-]+:[A-Za-z0-9._~%!()*+,;=-]{6,}@"
 patterns="$patterns|-----BEGIN ([A-Z]+ )?PRIVATE KEY-----"
 
-# Strip $(secret NAME) substitutions before the pattern scan — replace with a
+# Strip $(secret NAME) substitutions before the pattern scan - replace with a
 # single space so the resolver form is invisible to credential shapes (incl.
 # conn URIs) while inline creds elsewhere still match. Same approach as
 # secret-gate.sh; see that file for the rationale.
