@@ -44,6 +44,8 @@ Make sure your install dir (`~/.local/bin`) is on `PATH`. Done — you're ready 
 | List the names you've stored | `secret-list` |
 | Delete a secret | `secret-rm NAME` |
 | Set up the keychain (first run) | `secret-init` |
+| Change the autolock duration | `secret-config <duration>` |
+| Show the current autolock duration | `secret-config --show` |
 | Upgrade to the latest version | `secret-upgrade` |
 
 That's the entire surface. Everything below is just recipes for the middle column.
@@ -116,6 +118,30 @@ secret GH_TOKEN >/dev/null 2>&1 && echo "have it" || echo "missing"
 secret-rm GH_TOKEN
 ```
 
+### …change how long the keychain stays unlocked between prompts?
+
+Use `secret-config` to set the autolock timeout without re-running `secret-init`:
+
+```sh
+secret-config 10m            # 10 minutes — fewer password prompts during a session
+secret-config --show         # print the current timeout
+secret-config 1h --force     # >15m requires --force (logged with a reason)
+```
+
+Default cap is **15 minutes**. `--force` allows up to **4 hours** and writes one
+line to `~/.claude/state/secret-config.log` (timestamp, user, previous → new,
+reason — provide it via `SECRET_FORCE_REASON=...` or the interactive prompt).
+Above 4 hours is always rejected; `0` is rejected by design.
+
+Longer caches reduce password prompts but widen the window in which a
+prompt-injection or a compromised tool output can fetch secrets without
+re-prompting. The cap is a security knob, not a UX knob.
+
+Every `secret <NAME>` fetch is also appended to
+`~/.claude/state/secret-fetch.log` (name, parent PID, parent command — **never
+the value**). The append is best-effort; a failed log write never breaks the
+fetch.
+
 ### …upgrade to the latest version?
 
 ```sh
@@ -143,7 +169,9 @@ secret-add DEPLOY_KEY
 | Variable | Default | Purpose |
 |---|---|---|
 | `SECRET_KEYCHAIN` | `ai.keychain` | Keychain name used by every command. |
-| `SECRET_AUTOLOCK_SECONDS` | `300` | Idle/sleep autolock timeout, applied by `secret-init`. |
+| `SECRET_AUTOLOCK_SECONDS` | `300` | Initial autolock timeout applied by `secret-init`. After setup, change it with `secret-config <duration>`. |
+| `SECRET_STATE_DIR` | `~/.claude/state` | Where `secret` writes the per-fetch audit log and `secret-config` writes the `--force` log. |
+| `SECRET_FORCE_REASON` | _(unset)_ | Reason recorded by `secret-config <dur> --force`. If unset and stdin is a TTY, the script prompts; otherwise the log records `unspecified`. |
 
 ---
 
@@ -156,8 +184,12 @@ secret-add DEPLOY_KEY
   `secret-paste` for crown jewels.)
 - **Isolated.** A dedicated keychain (`ai.keychain`) with its own password, separate from your
   login keychain, so a script that reads secrets can't silently reach everything you own.
-- **Auto re-locks.** After `SECRET_AUTOLOCK_SECONDS` of idle time, or on sleep — macOS prompts
-  to unlock on the next read.
+- **Auto re-locks.** After the configured timeout of idle time, or on sleep — macOS prompts
+  to unlock on the next read. Default is 5 minutes; `secret-config` adjusts it within a 15m
+  cap (up to 4h with `--force`, logged with a reason).
+- **Every fetch is audited.** `secret <NAME>` appends one line to
+  `~/.claude/state/secret-fetch.log`: timestamp, name, parent PID, parent command. The value
+  is never written. Useful for "what did the agent pull while the cache was open?"
 
 ### Known limits — read these
 

@@ -28,17 +28,32 @@ If a secret is missing, **ask the human to add it** — do not run `secret-add`.
 | `secret NAME` inside `$(...)` for a command | ✅ yes |
 | `secret-list` | ✅ yes |
 | `secret-add` / `secret-paste` / `secret-rm` | ❌ no — human only |
+| `secret-config` (set autolock duration) | ❌ no — human only |
+| `secret-upgrade` (self-modify tooling) | ❌ no — human only |
 | `echo`/`cat`/`tee` a secret value, or write it into a file | ❌ no |
+
+**Why `secret-config` is human-only.** Bumping the autolock from 5m to 1h
+widens the window in which a prompt-injection or a compromised tool output can
+fetch secrets without re-prompting the human. The cap is a security boundary,
+not a UX dial. If you want a longer cache for a long-running task, ask the
+human to set it — the change is one line and they will see the prompt.
+
+**Observability.** Every `secret <NAME>` you call appends one line to
+`~/.claude/state/secret-fetch.log` (name, parent PID, parent command — never
+the value). The human can review which secrets were fetched during a session,
+even when the cache was open. Treat this as the audit trail behind your
+ergonomics: longer caches don't hide your fetches.
 
 ## What's enforced vs. what's etiquette
 
 Three layers back the rules above, installed from this directory:
 
 - **`permissions.deny`** (in `settings.snippet.json`) — a hard wall: the agent
-  cannot run `secret-add` / `secret-paste` / `secret-rm` at all.
-- **`hooks/secret-gate.sh`** (PreToolUse on Bash) — blocks the mutation commands
-  with an explanatory message, and blocks commands containing an inline
-  secret-shaped string, steering you to `$(secret NAME)`.
+  cannot run `secret-add` / `secret-paste` / `secret-rm` / `secret-upgrade` /
+  `secret-config` at all.
+- **`hooks/secret-gate.sh`** (PreToolUse on Bash) — blocks the mutation and
+  cache-duration commands with an explanatory message, and blocks commands
+  containing an inline secret-shaped string, steering you to `$(secret NAME)`.
 - **`hooks/secret-gate-write.sh`** (PreToolUse on Edit | Write | MultiEdit) —
   blocks file writes whose content carries a secret-shaped value. Closes the
   obvious gap where an agent would otherwise land `STRIPE_KEY=sk_live_…` in

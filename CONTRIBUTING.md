@@ -38,7 +38,7 @@ or `bin/secret-init`.
 
 | Path | What it is |
 |---|---|
-| `bin/` | The six commands. Bash, `set -euo pipefail`, one concern each. |
+| `bin/` | The commands. Bash, `set -euo pipefail`, one concern each. |
 | `agent/AGENTS.md` | Behavioral contract for AI agents. |
 | `agent/claude/hooks/` | PreToolUse gates (Bash + Edit/Write/MultiEdit). |
 | `agent/claude/settings.snippet.json` | Permissions + hook registration. |
@@ -57,3 +57,24 @@ or `bin/secret-init`.
 If a change relaxes a gate, widens a permission, or removes a guardrail,
 explicitly call out the rationale in the PR description. Hardening changes
 (new pattern, narrower allowlist, fail-loud rewording) need only a test.
+
+## Extending `secret-config`
+
+`secret-config` currently exposes one positional argument (the autolock
+duration). When a second configurable knob actually has a concrete use case:
+
+- **No secret values, ever.** Any new key holds a name, a duration, or a path —
+  never a token, password, or API key. Secrets live in the keychain. The script
+  header comment encodes this rule; preserve it.
+- **Caps are security knobs.** The 15m default cap and 4h hard cap exist to
+  bound the agent blast radius. Don't relax them without naming the threat
+  model in the PR description.
+- **Refactor to subcommands then, not now.** The positional form
+  (`secret-config <duration>`) is the v1 shorthand for "set the timeout". A
+  second key is the trigger to introduce a `git config`-style surface
+  (`secret-config set <key> <value>` / `get` / `list`). Keep the existing
+  positional form working as a shorthand for `set timeout`.
+- **Update the agent guardrails.** Any new subcommand that changes a security
+  property must be added to `agent/claude/hooks/secret-gate.sh` (mutation
+  alternation) and `agent/claude/settings.snippet.json` deny list, with a
+  matching bats test in `test/hooks/`.

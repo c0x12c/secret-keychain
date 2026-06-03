@@ -14,7 +14,9 @@
       "Bash(secret-rm)",
       "Bash(secret-rm *)",
       "Bash(secret-upgrade)",
-      "Bash(secret-upgrade *)"
+      "Bash(secret-upgrade *)",
+      "Bash(secret-config)",
+      "Bash(secret-config *)"
     ]
   },
   "hooks": {
