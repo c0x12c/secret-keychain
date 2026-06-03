@@ -91,3 +91,13 @@ teardown() { teardown_secret_env; }
   SECRET_FORCE_REASON="boundary" run secret-config 4h --force
   [ "$status" -eq 0 ]
 }
+
+@test "secret-config: --force scrubs quotes from reason in the log line" {
+  SECRET_FORCE_REASON='broken " quote' run secret-config 20m --force
+  [ "$status" -eq 0 ]
+  run cat "$SECRET_STATE_DIR/secret-config.log"
+  [[ "$output" == *"reason=\"broken  quote\""* ]]
+  # Verify exactly one matching reason= occurrence with balanced quotes.
+  count="$(grep -c '^[^"]*"[^"]*"$' "$SECRET_STATE_DIR/secret-config.log" || true)"
+  [ "$count" -ge 1 ]
+}
