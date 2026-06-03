@@ -17,5 +17,5 @@ setup_secret_env() {
 }
 
 teardown_secret_env() {
-  rm -f "${SECRET_STORE:-}" "${SECRET_STORE:-}.tmp"
+  rm -f "${SECRET_STORE:-}" "${SECRET_STORE:-}.tmp" "${SECRET_STORE:-}.timeout"
 }

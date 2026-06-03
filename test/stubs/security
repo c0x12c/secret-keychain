@@ -46,10 +46,33 @@ case "$cmd" in
       printf '    "svce"<blob>="%s"\n' "$svc"
     done < "$store"
     ;;
-  show-keychain-info)
-    [ "${SECRET_KEYCHAIN_EXISTS:-1}" = "1" ] && exit 0 || exit 1
+  set-keychain-settings)
+    # Parse: set-keychain-settings -t <seconds> [-l] <keychain>
+    secs=""; kc=""
+    while [ "$#" -gt 0 ]; do
+      case "$1" in
+        -t) secs="$2"; shift 2 ;;
+        -l) shift ;;
+        *)  kc="$1"; shift ;;
+      esac
+    done
+    : "${kc:=${SECRET_KEYCHAIN:-test.keychain}}"
+    : "${SECRET_TIMEOUT_STORE:=$SECRET_STORE.timeout}"
+    printf '%s\t%s\n' "$kc" "${secs:-0}" > "$SECRET_TIMEOUT_STORE"
     ;;
-  create-keychain|set-keychain-settings|list-keychains)
+  show-keychain-info)
+    [ "${SECRET_KEYCHAIN_EXISTS:-1}" = "1" ] || exit 1
+    kc="${1:-${SECRET_KEYCHAIN:-test.keychain}}"
+    : "${SECRET_TIMEOUT_STORE:=$SECRET_STORE.timeout}"
+    secs=300
+    if [ -f "$SECRET_TIMEOUT_STORE" ]; then
+      val="$(awk -F'\t' -v k="$kc" '$1==k {print $2; exit}' "$SECRET_TIMEOUT_STORE")"
+      [ -n "$val" ] && secs="$val"
+    fi
+    # Real macOS writes to stderr.
+    printf 'Keychain "%s" lock-on-sleep timeout=%ss\n' "$kc" "$secs" >&2
+    ;;
+  create-keychain|list-keychains)
     : # no-op for the stub
     ;;
   *)
