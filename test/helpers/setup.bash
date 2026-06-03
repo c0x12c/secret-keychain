@@ -12,10 +12,13 @@ setup_secret_env() {
   export SECRET_STORE
   export SECRET_KEYCHAIN="test.keychain"
   export SECRET_CLIP=""
+  SECRET_STATE_DIR="$(mktemp -d)"
+  export SECRET_STATE_DIR
   PATH="$REPO/test/stubs:$REPO/bin:$PATH"
   export PATH
 }
 
 teardown_secret_env() {
-  rm -f "${SECRET_STORE:-}" "${SECRET_STORE:-}.tmp"
+  rm -f "${SECRET_STORE:-}" "${SECRET_STORE:-}.tmp" "${SECRET_STORE:-}.timeout"
+  [ -n "${SECRET_STATE_DIR:-}" ] && rm -rf "$SECRET_STATE_DIR"
 }
