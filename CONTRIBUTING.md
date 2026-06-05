@@ -87,10 +87,10 @@ what cuts a tag and a GitHub Release - there is no manual `git tag` step.
 ### Cutting a release
 
 1. **Curate the changelog on a branch.** Replace the `## [Unreleased]`
-   heading with the new version:
+   heading with the new version - do NOT keep an empty `## [Unreleased]`
+   heading in this PR. The release workflow gates on the absence of that
+   heading; while it is present the release refuses to fire.
    ```
-   ## [Unreleased]
-
    ## [0.2.0](https://github.com/c0x12c/secret-keychain/compare/v0.1.0...v0.2.0) - YYYY-MM-DD
 
    ### Added
@@ -102,17 +102,17 @@ what cuts a tag and a GitHub Release - there is no manual `git tag` step.
    ### Fixed
    - ...
    ```
-   Keep an empty `## [Unreleased]` heading above the new version - the
-   release workflow refuses to fire while it is present, so missing it after
-   a release is a fail-loud signal, not a silent skip.
-2. **Update the link references at the bottom of the file** so the
-   `[Unreleased]` link points at `compare/vNEW...HEAD` and add a
-   `[NEW]: .../compare/vPREV...vNEW` entry.
+2. **Update the link references at the bottom of the file**: drop the
+   `[Unreleased]` link, and add a `[NEW]: .../compare/vPREV...vNEW` entry.
 3. **Open the PR.** The `Changelog touched` check passes automatically
    because the PR edits `CHANGELOG.md`.
 4. **Merge to `master`.** The `Release` workflow extracts the top versioned
    section, creates the `vX.Y.Z` tag, and publishes the GitHub Release with
    that section as the body.
+5. **Re-add an empty `## [Unreleased]` heading in a follow-up PR.** Land it
+   right after the tag publishes; the workflow checks the heading, sees it,
+   and is a no-op. Adding `[Unreleased]: .../compare/vNEW...HEAD` to the
+   link references at the same time keeps the file scannable.
 
 The workflow is idempotent: re-running for an existing tag is a no-op. A
 manual re-run is available via `Actions -> Release -> Run workflow`
