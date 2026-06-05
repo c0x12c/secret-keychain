@@ -34,6 +34,57 @@ test/run.sh`) does mutate the real `security` database (creates and tears down
 a throwaway keychain); run it before shipping a change to the `bin/` commands
 or `bin/secret-init`.
 
+## Install
+
+For normal local use from a clone, run:
+
+```sh
+./install.sh
+```
+
+That fetches tags, checks out the highest released `vX.Y.Z`, prints
+`secret-keychain <version>`, and symlinks the commands into `$PREFIX`
+(`~/.local/bin` by default). Detached HEAD is the expected state for the
+default install path.
+
+Escape hatches:
+
+```sh
+./install.sh --track master
+./install.sh --ref <tag|branch|sha>
+```
+
+Use `--track master` for bleeding-edge development, or `--ref` to pin an
+explicit ref. To see what a clone is currently on, run `secret --version`.
+Release notes for published tags live on the
+[GitHub Releases page](https://github.com/c0x12c/secret-keychain/releases).
+
+## Upgrade
+
+For an installed clone, the default upgrade path is:
+
+```sh
+secret-upgrade
+```
+
+That fetches tags and moves the clone to the highest released `vX.Y.Z`. It
+prints `Already on vX.Y.Z` when no newer release exists, or `Upgraded to
+vX.Y.Z` when it moves forward.
+
+Escape hatches:
+
+```sh
+secret-upgrade --track master
+SECRET_UPGRADE_TRACK=master secret-upgrade
+secret-upgrade --ref <tag|branch|sha>
+```
+
+`--track master` (or `SECRET_UPGRADE_TRACK=master`) keeps following `master`
+via `git pull --ff-only`; `--ref` pins an explicit ref. `secret-upgrade`
+refuses to run if the working tree is dirty, or if the clone is on a named
+non-`master` branch, to avoid moving WIP. Detached HEAD on a release tag and
+`master` are both valid states.
+
 ## What lives where
 
 | Path | What it is |

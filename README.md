@@ -24,11 +24,17 @@ No account, no server, no daemon, no cost. Just the Keychain you already have, m
 ```sh
 git clone https://github.com/c0x12c/secret-keychain.git
 cd secret-keychain
-./install.sh        # symlinks the commands into ~/.local/bin
+./install.sh        # checks out the latest released tag, prints the version, then symlinks into ~/.local/bin
 secret-init         # creates the keychain + autolock (asks for a keychain password, once)
 ```
 
+Bleeding edge instead of the latest release:
+```sh
+./install.sh --track master
+```
+
 Make sure your install dir (`~/.local/bin`) is on `PATH`. Done - you're ready to store secrets.
+To upgrade later, run `secret-upgrade` for the newest release or `secret-upgrade --track master` to keep following `master`; use `secret --version` to see what you're on. Release notes for each tag live at <https://github.com/c0x12c/secret-keychain/releases>.
 
 ---
 
@@ -145,13 +151,17 @@ fetch.
 ### …upgrade to the latest version?
 
 ```sh
-secret-upgrade                  # fast-forward pull + re-link the symlinks
+secret-upgrade                  # moves to the newest released tag + re-links the symlinks
+secret-upgrade --track master   # keeps following master via git pull --ff-only
 ```
 
-`secret-upgrade` runs `git pull --ff-only` against the clone the tool was installed
-from, then re-runs `install.sh` so new commands appear. It refuses on a dirty
-working tree or a diverged branch - resolve those by hand. Tarball installs
-(no `.git/` directory) must re-clone manually.
+`secret-upgrade` runs against the clone the tool was installed from. By default it
+fetches tags and checks out the highest released `vX.Y.Z`; `--track master` keeps
+you on the bleeding edge, and `--ref <tag|branch|sha>` pins an explicit ref.
+Use `secret --version` to confirm the current tag or branch. It refuses on a dirty
+working tree or when you're on a named non-`master` branch, to avoid moving WIP.
+Tarball installs (no `.git/` directory) must re-clone manually. Release notes for
+each tag are on the [GitHub Releases page](https://github.com/c0x12c/secret-keychain/releases).
 
 ### …use a separate keychain (e.g. work vs personal)?
 
