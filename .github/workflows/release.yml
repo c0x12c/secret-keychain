@@ -61,20 +61,37 @@ jobs:
           echo "Extracted version: $VERSION"
           echo "VERSION=$VERSION" >> "$GITHUB_ENV"
 
+      # Inline section extractor: print lines between `## [VERSION]` (inclusive of
+      # body, exclusive of heading itself) and the next `## [` heading.
       - name: Extract changelog section
         id: changelog
-        uses: nickohold/changelog-version-extractor@v1.0.0
-        with:
-          version_prefix: "## ["
-          version: ${{ env.VERSION }}
-          changelog_path: "./CHANGELOG.md"
+        env:
+          VERSION: ${{ env.VERSION }}
+        run: |
+          BODY=$(awk -v ver="$VERSION" '
+            BEGIN { found=0 }
+            /^## \[/ {
+              if (found) exit
+              if ($0 ~ "^## \\[v?" ver "\\]") { found=1; next }
+            }
+            found { print }
+          ' CHANGELOG.md | sed -e '/./,$!d' | awk 'BEGIN{n=0} {lines[n++]=$0} END{end=n; while (end>0 && lines[end-1]=="") end--; for (i=0;i<end;i++) print lines[i]}')
+          if [ -z "$BODY" ]; then
+            echo "::error::Empty changelog body for $VERSION"
+            exit 1
+          fi
+          {
+            echo 'body<<EOF_CHANGELOG'
+            printf '%s\n' "$BODY"
+            echo 'EOF_CHANGELOG'
+          } >> "$GITHUB_OUTPUT"
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: "v${{ env.VERSION }}"
           name: "secret-keychain v${{ env.VERSION }}"
-          body: ${{ steps.changelog.outputs.changelog }}
+          body: ${{ steps.changelog.outputs.body }}
           draft: false
           prerelease: false
           # Idempotent: re-running for an existing tag is a no-op rather than a failure.
