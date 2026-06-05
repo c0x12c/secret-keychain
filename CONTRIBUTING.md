@@ -78,3 +78,63 @@ duration). When a second configurable knob actually has a concrete use case:
   property must be added to `agent/claude/hooks/secret-gate.sh` (mutation
   alternation) and `agent/claude/settings.snippet.json` deny list, with a
   matching bats test in `test/hooks/`.
+
+## Releasing
+
+Releases are driven by `CHANGELOG.md`. Editing the changelog on `master` is
+what cuts a tag and a GitHub Release - there is no manual `git tag` step.
+
+### Cutting a release
+
+1. **Curate the changelog on a branch.** Replace the `## [Unreleased]`
+   heading with the new version:
+   ```
+   ## [Unreleased]
+
+   ## [0.2.0](https://github.com/c0x12c/secret-keychain/compare/v0.1.0...v0.2.0) - YYYY-MM-DD
+
+   ### Added
+   - ...
+
+   ### Changed
+   - ...
+
+   ### Fixed
+   - ...
+   ```
+   Keep an empty `## [Unreleased]` heading above the new version - the
+   release workflow refuses to fire while it is present, so missing it after
+   a release is a fail-loud signal, not a silent skip.
+2. **Update the link references at the bottom of the file** so the
+   `[Unreleased]` link points at `compare/vNEW...HEAD` and add a
+   `[NEW]: .../compare/vPREV...vNEW` entry.
+3. **Open the PR.** The `Changelog touched` check passes automatically
+   because the PR edits `CHANGELOG.md`.
+4. **Merge to `master`.** The `Release` workflow extracts the top versioned
+   section, creates the `vX.Y.Z` tag, and publishes the GitHub Release with
+   that section as the body.
+
+The workflow is idempotent: re-running for an existing tag is a no-op. A
+manual re-run is available via `Actions -> Release -> Run workflow`
+(`workflow_dispatch`).
+
+### SemVer for `secret-keychain`
+
+- **patch** - doc, refactor, behavior-preserving bug fix.
+- **minor** - new command, new `secret-config` key, new env var, new agent
+  hook coverage, expanded allowlist.
+- **major** - renamed or removed command or env var, changed exit codes,
+  broken `$(secret NAME)` contract, narrowed default behavior in a way
+  consumers must adapt to.
+
+### `[skip changelog]` escape hatch
+
+PRs that genuinely require no changelog entry (a CI-only tweak, a typo in
+internal docs) can bypass the `Changelog touched` check by including
+`[skip changelog]` in the PR body. Use sparingly - the default assumption
+is that anything worth merging is worth a one-line entry.
+
+### Dependabot
+
+GitHub Actions versions are updated weekly by Dependabot. Minor and patch
+bumps auto-merge; majors are held for manual review.

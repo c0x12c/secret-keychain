@@ -1,0 +1,50 @@
+# Block PRs that don't touch CHANGELOG.md.
+#
+# Escape hatch: include `[skip changelog]` in the PR body. Use sparingly -
+# the intent is to keep release notes in sync with shipped behavior.
+name: Changelog touched
+
+on:
+  pull_request:
+    branches:
+      - master
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  changelog-touched:
+    name: Changelog touched
+    runs-on: ubuntu-latest
+    steps:
+      - name: Skip if PR opts out
+        id: skip
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          if printf '%s' "$PR_BODY" | grep -Fq '[skip changelog]'; then
+            echo "PR body contains [skip changelog] - skipping check."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Checkout
+        if: steps.skip.outputs.skip != 'true'
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Require CHANGELOG.md change
+        if: steps.skip.outputs.skip != 'true'
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          git fetch --quiet origin "$BASE_REF"
+          base=$(git merge-base HEAD "origin/$BASE_REF")
+          if ! git diff --name-only "$base"...HEAD | grep -qx 'CHANGELOG.md'; then
+            echo "::error::PR did not touch CHANGELOG.md. Edit it, or add [skip changelog] to the PR body."
+            exit 1
+          fi
+          echo "CHANGELOG.md was modified."

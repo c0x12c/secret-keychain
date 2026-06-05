@@ -1,0 +1,83 @@
+# Tags + GitHub Release driven by CHANGELOG.md.
+#
+# Editing CHANGELOG.md on master (renaming `[Unreleased]` to a versioned
+# heading) cuts a tag and a Release whose body is the extracted section.
+# While the `[Unreleased]` heading is present, this workflow is a no-op.
+name: Release
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+    paths:
+      - 'CHANGELOG.md'
+
+permissions:
+  contents: write # to publish a GitHub release
+
+jobs:
+  verify-changelog:
+    name: Verify Changelog
+    runs-on: ubuntu-latest
+    if: github.repository_owner == 'c0x12c'
+    outputs:
+      is_releasable: ${{ steps.check_unreleased.outputs.is_releasable }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check for [Unreleased] section
+        id: check_unreleased
+        run: |
+          # The link-reference at the bottom (`[Unreleased]: https://...`)
+          # is allowed; only an `## [Unreleased]` heading gates the release.
+          if grep -qE '^##[[:space:]]+\[Unreleased\]' CHANGELOG.md; then
+            echo "is_releasable=false" >> "$GITHUB_OUTPUT"
+            echo "CHANGELOG.md still has an ## [Unreleased] heading - skipping release."
+          else
+            echo "is_releasable=true" >> "$GITHUB_OUTPUT"
+            echo "CHANGELOG.md is ready for release."
+          fi
+
+  release:
+    name: Release
+    needs: verify-changelog
+    runs-on: ubuntu-latest
+    if: github.repository_owner == 'c0x12c' && needs.verify-changelog.outputs.is_releasable == 'true'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Extract the first (latest) versioned heading: `## [X.Y.Z]` or `## [vX.Y.Z]`.
+      - name: Extract version from changelog
+        id: extract_version
+        run: |
+          VERSION=$(grep -oE '^## \[v?[0-9]+\.[0-9]+\.[0-9]+\]' CHANGELOG.md | head -1 | sed 's/^## \[v\{0,1\}//;s/\]$//')
+          if [ -z "$VERSION" ]; then
+            echo "::error::Could not extract a SemVer heading (## [X.Y.Z]) from CHANGELOG.md."
+            exit 1
+          fi
+          echo "Extracted version: $VERSION"
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+
+      - name: Extract changelog section
+        id: changelog
+        uses: nickohold/changelog-version-extractor@v1.0.0
+        with:
+          version_prefix: "## ["
+          version: ${{ env.VERSION }}
+          changelog_path: "./CHANGELOG.md"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: "v${{ env.VERSION }}"
+          name: "secret-keychain v${{ env.VERSION }}"
+          body: ${{ steps.changelog.outputs.changelog }}
+          draft: false
+          prerelease: false
+          # Idempotent: re-running for an existing tag is a no-op rather than a failure.
+          fail_on_unmatched_files: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,0 +1,15 @@
+# secret-keychain has no package manifest (npm/cargo/etc) - only GitHub
+# Actions versions need keeping fresh.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: 'deps-gh-actions:'
+    labels: []
+    groups:
+      github-actions:
+        patterns:
+          - '*'
