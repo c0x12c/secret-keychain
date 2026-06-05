@@ -3,7 +3,7 @@
 All notable changes to `secret-keychain` adhere to [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.1.0](https://github.com/c0x12c/secret-keychain/releases/tag/v0.1.0) - 2026-06-05
+## [0.1.0] - 2026-06-05
 
 ### Added
 - Initial release of the `secret-keychain` tool kit.
