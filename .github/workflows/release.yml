@@ -61,20 +61,24 @@ jobs:
           echo "Extracted version: $VERSION"
           echo "VERSION=$VERSION" >> "$GITHUB_ENV"
 
-      # Inline section extractor: print lines between `## [VERSION]` (inclusive of
-      # body, exclusive of heading itself) and the next `## [` heading.
+      # Inline section extractor: print lines between `## [VERSION]` (exclusive
+      # of the heading itself) and the next `## [` heading OR the first
+      # `[label]: url` link-reference line, whichever comes first. Trailing
+      # blank lines are trimmed. The version is regex-escaped so metacharacters
+      # like `.` cannot accidentally match a wrong heading.
       - name: Extract changelog section
         id: changelog
         env:
           VERSION: ${{ env.VERSION }}
         run: |
-          BODY=$(awk -v ver="$VERSION" '
-            BEGIN { found=0 }
-            /^## \[/ {
-              if (found) exit
-              if ($0 ~ "^## \\[v?" ver "\\]") { found=1; next }
+          # Escape regex metacharacters in VERSION (notably `.`).
+          VER_RE=$(printf '%s' "$VERSION" | sed 's/[][\\.^$*+?(){}|/]/\\&/g')
+          BODY=$(awk -v pat="^## \\\\[v?${VER_RE}\\\\]" '
+            {
+              if (found && (/^## \[/ || /^\[[^]]+\]:[[:space:]]/)) exit
+              if (!found && $0 ~ pat) { found=1; next }
+              if (found) print
             }
-            found { print }
           ' CHANGELOG.md | sed -e '/./,$!d' | awk 'BEGIN{n=0} {lines[n++]=$0} END{end=n; while (end>0 && lines[end-1]=="") end--; for (i=0;i<end;i++) print lines[i]}')
           if [ -z "$BODY" ]; then
             echo "::error::Empty changelog body for $VERSION"
