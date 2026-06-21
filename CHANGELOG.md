@@ -10,6 +10,11 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   with [VHS](https://github.com/charmbracelet/vhs) from the committed
   `demo/demo.tape`. The recording runs the real tools against a throwaway
   keychain it creates and deletes, so it never touches a real keychain.
+- Agent-safety demo in the README's AI-agent section
+  (`demo/secret-keychain-agent.gif`, driven by `demo/agent-demo.sh`): a staged
+  Claude Code session where the secret resolution and both PreToolUse guardrail
+  blocks (human-only mutation, inline-token rejection) are the real shipped
+  `secret-gate.sh` hook.
 
 ## [0.2.0] - 2026-06-05
 

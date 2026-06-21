@@ -222,6 +222,13 @@ secret-add DEPLOY_KEY
 
 Coding agents (Claude Code, etc.) can read secrets safely without ever seeing the value in
 plaintext: they call `$(secret NAME)` inline and are blocked from storing or deleting secrets.
+
+<p align="center">
+  <img src="demo/secret-keychain-agent.gif" alt="An AI agent reads a secret via $(secret NAME) without the value entering its transcript, then is blocked by the PreToolUse gate when it tries to store a secret or paste a raw token inline" width="100%">
+</p>
+
+> Illustrative Claude Code session - the transcript chrome is staged, but the secret resolution and both guardrail blocks are the real shipped [`secret-gate.sh`](agent/claude/hooks/secret-gate.sh) hook. Regenerate with `vhs demo/agent-demo.tape`.
+
 See [`agent/AGENTS.md`](agent/AGENTS.md) for the rules. The Claude Code guardrails in
 [`agent/claude/`](agent/claude/) ship as three layers:
 
