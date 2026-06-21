@@ -5,6 +5,12 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+- Animated terminal demo in the README (`demo/secret-keychain.gif`), rendered
+  with [VHS](https://github.com/charmbracelet/vhs) from the committed
+  `demo/demo.tape`. The recording runs the real tools against a throwaway
+  keychain it creates and deletes, so it never touches a real keychain.
+
 ## [0.2.0] - 2026-06-05
 
 ### Added

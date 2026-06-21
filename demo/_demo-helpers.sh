@@ -1,3 +1,4 @@
+# shellcheck shell=bash
 # Helpers sourced only by demo/demo.tape so the recorded GIF is self-contained.
 # Not part of the tool. This stubs `curl` with a local responder so the demo
 # needs no network call and no real credential: the request "succeeds" only if
