@@ -17,6 +17,12 @@ curl -H "Authorization: Bearer $(secret GITHUB_TOKEN)" https://api.github.com/us
 
 No account, no server, no daemon, no cost. Just the Keychain you already have, made ergonomic.
 
+<p align="center">
+  <img src="demo/secret-keychain.gif" alt="Storing a secret, listing names, using it inline in a curl call, and confirming the value never persists in the environment" width="100%">
+</p>
+
+> Recorded with [VHS](https://github.com/charmbracelet/vhs) from [`demo/demo.tape`](demo/demo.tape) - regenerate with `vhs demo/demo.tape`. The demo runs against a throwaway keychain that is created and deleted by the recording; your real keychain is never touched.
+
 ---
 
 ## 60-second start
