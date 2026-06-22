@@ -105,3 +105,40 @@ teardown() { teardown_secret_env; }
   run secret K
   [ "$output" = "v" ]
 }
+
+@test "secret-audit: missing log -> exit 0 with no-audit message" {
+  run secret-audit
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"(no audit log yet)"* ]]
+}
+
+@test "secret-audit: invalid flag -> exit 64" {
+  run secret-audit --wat
+  [ "$status" -eq 64 ]
+  [[ "$output" == *"usage: secret-audit"* ]]
+}
+
+@test "secret-load: no args -> exit 64" {
+  run secret-load
+  [ "$status" -eq 64 ]
+  [[ "$output" == *"usage: secret-load"* ]]
+}
+
+@test "secret-load: unreadable file -> exit 66" {
+  run secret-load "$BATS_TEST_TMPDIR/missing.env"
+  [ "$status" -eq 66 ]
+  [[ "$output" == *"cannot read"* ]]
+}
+
+@test "secret-rotate: no args -> exit 64" {
+  run secret-rotate
+  [ "$status" -eq 64 ]
+  [[ "$output" == *"usage: secret-rotate"* ]]
+}
+
+@test "secret-rotate: invalid flag -> exit 64" {
+  echo "old" | secret-add API_KEY
+  run secret-rotate API_KEY --wat
+  [ "$status" -eq 64 ]
+  [[ "$output" == *"usage: secret-rotate"* ]]
+}

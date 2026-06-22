@@ -58,10 +58,12 @@ To upgrade later, run `secret-upgrade` for the newest release or `secret-upgrade
 |---|---|
 | Store a secret (hidden prompt) | `secret-add NAME` |
 | Store a secret from the clipboard (safest) | copy the value, then `secret-paste NAME` |
-| Update / rotate a secret | `secret-add NAME` again (overwrites) |
+| Update / rotate a secret | `secret-rotate NAME` |
 | Print a secret | `secret NAME` |
 | Use a secret in a command | `... $(secret NAME) ...` |
 | List the names you've stored | `secret-list` |
+| Bulk-load secrets from a file | `secret-load path/to/.env` |
+| View the audit log | `secret-audit` |
 | Delete a secret | `secret-rm NAME` |
 | Set up the keychain (first run) | `secret-init` |
 | Change the autolock duration | `secret-config <duration>` |
@@ -88,9 +90,14 @@ command-line argument:
 secret-paste STRIPE_PROD        # stores it and clears your clipboard
 ```
 
-**Rotate / replace** an existing one - same command, it overwrites:
+**Rotate / replace** an existing one - archives the old value, then prompts for the new one:
 ```sh
-secret-add STRIPE_PROD
+secret-rotate STRIPE_PROD
+```
+
+**Bulk-load** several secrets from a file:
+```sh
+secret-load .env.production
 ```
 
 ### …use a secret in a command?
@@ -136,6 +143,14 @@ secret GH_TOKEN >/dev/null 2>&1 && echo "have it" || echo "missing"
 
 ```sh
 secret-rm GH_TOKEN
+```
+
+### …inspect the audit log?
+
+```sh
+secret-audit            # last 50 audit entries
+secret-audit --all      # full log
+secret-audit --blocks   # only BLOCKED_INLINE entries
 ```
 
 ### …change how long the keychain stays unlocked between prompts?
@@ -235,7 +250,7 @@ See the [agent demo above](#secret-keychain) for the read-safe / blocked-write f
 See [`agent/AGENTS.md`](agent/AGENTS.md) for the rules. The Claude Code guardrails in
 [`agent/claude/`](agent/claude/) ship as three layers:
 
-- `permissions.deny` - hard wall against `secret-add` / `secret-paste` / `secret-rm`.
+- `permissions.deny` - hard wall against `secret-add` / `secret-paste` / `secret-rm` / `secret-load` / `secret-rotate`.
 - `secret-gate.sh` - PreToolUse on `Bash`: blocks mutations and inline secret-shaped strings
   in commands (Stripe, GitHub, npm, JWT, AWS, GCP, Anthropic, OpenAI, connection URIs with
   embedded passwords, curl `-u user:secret`).

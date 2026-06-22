@@ -4,7 +4,9 @@
     "allow": [
       "Bash(secret)",
       "Bash(secret *)",
-      "Bash(secret-list)"
+      "Bash(secret-list)",
+      "Bash(secret-audit)",
+      "Bash(secret-audit *)"
     ],
     "deny": [
       "Bash(secret-add)",
@@ -13,6 +15,10 @@
       "Bash(secret-paste *)",
       "Bash(secret-rm)",
       "Bash(secret-rm *)",
+      "Bash(secret-load)",
+      "Bash(secret-load *)",
+      "Bash(secret-rotate)",
+      "Bash(secret-rotate *)",
       "Bash(secret-upgrade)",
       "Bash(secret-upgrade *)",
       "Bash(secret-config)",

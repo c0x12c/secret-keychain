@@ -67,6 +67,72 @@ teardown() { teardown_secret_env; }
   [ "$(secret GAMMA)" = "v-gamma" ]
 }
 
+@test "lifecycle: rotate archives the old value and stores the new one" {
+  echo "v1" | secret-add API_KEY
+
+  run bash -c 'printf "%s\n" "v2" | secret-rotate API_KEY'
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"archived: API_KEY__rotated_"* ]]
+  [[ "$output" == *"rotated: API_KEY"* ]]
+
+  run secret API_KEY
+  [ "$status" -eq 0 ]
+  [ "$output" = "v2" ]
+
+  run secret-list
+  [[ "$output" == *"API_KEY__rotated_"* ]]
+
+  archived_name="$(printf '%s\n' "$output" | grep '^API_KEY__rotated_' | head -n 1)"
+  run secret "$archived_name"
+  [ "$status" -eq 0 ]
+  [ "$output" = "v1" ]
+}
+
+@test "lifecycle: secret-load imports multiple keys from a file" {
+  envfile="$BATS_TEST_TMPDIR/load.env"
+  cat > "$envfile" <<'EOF'
+# comment
+ALPHA=one
+BETA="two words"
+GAMMA='three$signs'
+EMPTY=
+TODO_KEY=TODO
+EOF
+
+  run secret-load "$envfile"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"PASS ALPHA"* ]]
+  [[ "$output" == *"PASS BETA"* ]]
+  [[ "$output" == *"PASS GAMMA"* ]]
+  [[ "$output" == *"SKIP EMPTY (placeholder)"* ]]
+  [[ "$output" == *"SKIP TODO_KEY (placeholder)"* ]]
+
+  [ "$(secret ALPHA)" = "one" ]
+  [ "$(secret BETA)" = "two words" ]
+  [ "$(secret GAMMA)" = 'three$signs' ]
+}
+
+@test "lifecycle: secret-audit reads the audit log without mutating it" {
+  logfile="$SECRET_STATE_DIR/secret-audit.log"
+  printf '%s\n' \
+    '2026-06-22 10:00:00 ROTATED name=API_KEY' \
+    '2026-06-22 10:01:00 BLOCKED_INLINE cmd=echo bad' \
+    > "$logfile"
+  before="$(cat "$logfile")"
+
+  run secret-audit
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"ROTATED name=API_KEY"* ]]
+  [[ "$output" == *"BLOCKED_INLINE"* ]]
+
+  run secret-audit --blocks
+  [ "$status" -eq 0 ]
+  [ "$output" = '2026-06-22 10:01:00 BLOCKED_INLINE cmd=echo bad' ]
+
+  after="$(cat "$logfile")"
+  [ "$after" = "$before" ]
+}
+
 # ─── 2. Threat surface ───────────────────────────────────────────────────────
 
 @test "threat: \$(secret NAME) does not put the value into BASH_HISTORY" {
@@ -110,6 +176,35 @@ teardown() { teardown_secret_env; }
   run secret-list
   [[ "$output" == *"LONG_KEY"* ]]
   [[ "$output" != *"xyz-marker"* ]]
+}
+
+@test "failure mode: secret-load reports malformed lines and still loads valid keys" {
+  envfile="$BATS_TEST_TMPDIR/bad.env"
+  cat > "$envfile" <<'EOF'
+GOOD=value
+NOT_AN_ASSIGNMENT
+EOF
+
+  run secret-load "$envfile"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"PASS GOOD"* ]]
+  [[ "$output" == *"FAIL malformed line (no =): NOT_AN_ASSIGNMENT..."* ]]
+  [ "$(secret GOOD)" = "value" ]
+}
+
+@test "failure mode: secret-rotate missing key -> exit 1" {
+  run secret-rotate MISSING
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"not found"* ]]
+
+  run secret-list
+  [[ "$output" != *"MISSING"* ]]
+}
+
+@test "failure mode: secret-audit missing log -> exit 0 with no-audit message" {
+  run secret-audit
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"(no audit log yet)"* ]]
 }
 
 # ─── 3. Special-character round-trip ─────────────────────────────────────────
@@ -260,6 +355,18 @@ _block_write() {
   [ "$decision" = "block" ]
   [ -n "$reason" ]
   [ "$reason" != "null" ]
+}
+
+@test "hook contract: secret-load and secret-rotate are blocked as human-only mutations" {
+  jq -n --arg c 'secret-load secrets.env' '{tool_input: {command: $c}}' > "$BATS_TEST_TMPDIR/p.json"
+  run bash "$GATE" < "$BATS_TEST_TMPDIR/p.json"
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"secret-load"* ]]
+
+  jq -n --arg c 'secret-rotate API_KEY' '{tool_input: {command: $c}}' > "$BATS_TEST_TMPDIR/p.json"
+  run bash "$GATE" < "$BATS_TEST_TMPDIR/p.json"
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"secret-rotate"* ]]
 }
 
 @test "hook contract: malformed JSON payload -> allow, never crash" {
