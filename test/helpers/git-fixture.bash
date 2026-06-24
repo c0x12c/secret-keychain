@@ -42,7 +42,7 @@ make_git_fixture() {
   git -C "$seed" commit -am "post release" >/dev/null
   git -C "$seed" push origin master >/dev/null
 
-  git clone "$remote" "$clone" >/dev/null
+  git clone --no-hardlinks "$remote" "$clone" >/dev/null
   git_fixture_config "$clone"
 
   export FIXTURE_REMOTE="$remote"
