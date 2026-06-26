@@ -11,7 +11,7 @@ jobs:
     name: Shellcheck
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Run shellcheck
         uses: ludeeus/action-shellcheck@master
         env:
@@ -28,7 +28,7 @@ jobs:
     # keychains on the runner).
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Install bats-core + jq
         run: brew install bats-core jq
       - name: Run hermetic test suite
