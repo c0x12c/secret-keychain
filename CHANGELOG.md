@@ -5,6 +5,15 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+- One-line `curl ... | bash` install. `install.sh` is now self-bootstrapping:
+  piped via curl it clones into `~/.secret-keychain` (override with
+  `SECRET_KEYCHAIN_HOME`) and re-execs itself there, passing args through.
+  Running it from inside a clone works exactly as before.
+- The symlink step now links every command in `bin/` instead of a hardcoded
+  list, so `secret-rotate`, `secret-load`, and `secret-audit` are linked on
+  install/upgrade.
+
 ### Added
 - Animated terminal demo in the README (`demo/secret-keychain.gif`), rendered
   with [VHS](https://github.com/charmbracelet/vhs) from the committed

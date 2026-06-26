@@ -36,16 +36,18 @@ No account, no server, no daemon, no cost. Just the Keychain you already have, m
 ## 60-second start
 
 ```sh
-git clone https://github.com/c0x12c/secret-keychain.git
-cd secret-keychain
-./install.sh        # checks out the latest released tag, prints the version, then symlinks into ~/.local/bin
+curl -fsSL https://raw.githubusercontent.com/c0x12c/secret-keychain/master/install.sh | bash
 secret-init         # creates the keychain + autolock (asks for a keychain password, once)
 ```
 
+The installer clones into `~/.secret-keychain` (the latest released tag), then symlinks the `secret-*` commands into `~/.local/bin`.
+
 Bleeding edge instead of the latest release:
 ```sh
-./install.sh --track master
+curl -fsSL https://raw.githubusercontent.com/c0x12c/secret-keychain/master/install.sh | bash -s -- --track master
 ```
+
+Prefer to clone yourself? `git clone` the repo and run `./install.sh` from inside it - same result, any clone location works.
 
 Make sure your install dir (`~/.local/bin`) is on `PATH`. Done - you're ready to store secrets.
 To upgrade later, run `secret-upgrade` for the newest release or `secret-upgrade --track master` to keep following `master`; use `secret --version` to see what you're on. Release notes for each tag live at <https://github.com/c0x12c/secret-keychain/releases>.
@@ -184,7 +186,9 @@ secret-upgrade                  # moves to the newest released tag + re-links th
 secret-upgrade --track master   # keeps following master via git pull --ff-only
 ```
 
-`secret-upgrade` runs against the clone the tool was installed from. By default it
+`secret-upgrade` runs against the clone the tool was installed from - the curl
+installer puts that at `~/.secret-keychain`; a manual `git clone` uses wherever you
+cloned. It follows the install symlink back to the repo either way. By default it
 fetches tags and checks out the highest released `vX.Y.Z`; `--track master` keeps
 you on the bleeding edge, and `--ref <tag|branch|sha>` pins an explicit ref.
 Use `secret --version` to confirm the current tag or branch. It refuses on a dirty
