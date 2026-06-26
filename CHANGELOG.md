@@ -3,7 +3,7 @@
 All notable changes to `secret-keychain` adhere to [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.2.1] - 2026-06-26
 
 ### Changed
 - One-line `curl ... | bash` install. `install.sh` is now self-bootstrapping:
@@ -54,6 +54,7 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   opt-in real-Keychain integration suite (`RUN_LIVE=1 test/run.sh`).
 - CI: shellcheck + bats on macOS via `.github/workflows/validate.yml`.
 
-[Unreleased]: https://github.com/c0x12c/secret-keychain/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/c0x12c/secret-keychain/compare/v0.2.1...HEAD
+[0.2.1]: https://github.com/c0x12c/secret-keychain/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/c0x12c/secret-keychain/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/c0x12c/secret-keychain/releases/tag/v0.1.0
