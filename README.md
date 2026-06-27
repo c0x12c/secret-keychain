@@ -215,6 +215,18 @@ secret-add DEPLOY_KEY
 | `SECRET_AUTOLOCK_SECONDS` | `300` | Initial autolock timeout applied by `secret-init`. After setup, change it with `secret-config <duration>`. |
 | `SECRET_STATE_DIR` | `~/.claude/state` | Where `secret` writes the per-fetch audit log and `secret-config` writes the `--force` log. |
 | `SECRET_FORCE_REASON` | _(unset)_ | Reason recorded by `secret-config <dur> --force`. If unset and stdin is a TTY, the script prompts; otherwise the log records `unspecified`. |
+| `SECRET_NO_UPDATE_CHECK` | _(unset)_ | Set to `1` to disable the "new version available" notice. Also auto-skipped under `CI` and whenever stderr isn't a TTY. |
+| `SECRET_UPDATE_INTERVAL` | `86400` | Minimum seconds between background version checks (default once/day). |
+| `NO_COLOR` | _(unset)_ | Honored by every command - disables ANSI color in status output. |
+
+### Update notices
+
+Low-frequency commands (`secret-list`, `secret-init`, `secret-add`) print a
+one-line notice to stderr when a newer released tag exists, pointing you at
+`secret-upgrade`. The check is throttled (once/day) and non-blocking: it refreshes
+a cache in the background, so the notice appears on a later run and never delays
+the command. It never auto-upgrades, never runs on the hot-path `secret` fetch,
+and stays silent under `CI`, when piped, or with `SECRET_NO_UPDATE_CHECK=1`.
 
 ---
 

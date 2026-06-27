@@ -3,6 +3,18 @@
 All notable changes to `secret-keychain` adhere to [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- Update notifier: low-frequency commands (`secret-list`, `secret-init`,
+  `secret-add`) print a one-line "new version available" notice to stderr when a
+  newer released tag exists. It is throttled (one network check per day,
+  `SECRET_UPDATE_INTERVAL`), non-blocking (the `git ls-remote` check runs in the
+  background and only writes a cache; the notice appears on the next run), and
+  notify-only - it points you at `secret-upgrade` and never auto-upgrades. Opt
+  out with `SECRET_NO_UPDATE_CHECK=1`; auto-skipped under `CI` and when stderr is
+  not a TTY. The hot-path `secret` fetch is never touched.
+
 ## [0.3.0] - 2026-06-27
 
 ### Added
