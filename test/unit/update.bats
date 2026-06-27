@@ -62,13 +62,24 @@ teardown() { teardown_secret_env; }
   [ "$status" -eq 1 ]
 }
 
+@test "opt-out treats false-ish values as NOT opted out (=0 still checks)" {
+  CI='' SECRET_NO_UPDATE_CHECK=0 run secret_update_enabled
+  [ "$status" -eq 0 ]
+  CI='' SECRET_NO_UPDATE_CHECK=false run secret_update_enabled
+  [ "$status" -eq 0 ]
+  CI='' SECRET_NO_UPDATE_CHECK=true run secret_update_enabled
+  [ "$status" -eq 1 ]
+}
+
 @test "check is a silent no-op when stderr is not a TTY (never leaks to stdout)" {
   run secret_update_check "$REPO"
   [ "$status" -eq 0 ]
   [ -z "$output" ]
 }
 
-@test "secret-list output never carries an update notice when piped" {
+@test "secret-list emits no update notice in a non-interactive (non-TTY) run" {
+  # Under the Bats harness stderr is not a TTY, so the notifier must stay silent;
+  # this guards against the notice ever reaching captured output (incl. stdout).
   echo v1 | secret-add UA
   run secret-list
   [[ "$output" != *"available"* ]]

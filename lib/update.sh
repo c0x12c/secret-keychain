@@ -14,10 +14,20 @@
 [ -n "${__SECRET_UPDATE_SOURCED:-}" ] && return 0
 __SECRET_UPDATE_SOURCED=1
 
+# _secret_truthy VALUE -> 0 if VALUE is set to a truthy token, 1 otherwise.
+# Empty and the usual false tokens (0/false/no/off) are NOT truthy, so e.g.
+# SECRET_NO_UPDATE_CHECK=0 does not opt out.
+_secret_truthy() {
+  case "${1:-}" in
+    ''|0|false|FALSE|False|no|NO|No|off|OFF|Off) return 1 ;;
+    *) return 0 ;;
+  esac
+}
+
 # secret_update_enabled -> 0 if version checks are allowed, 1 if opted out.
 secret_update_enabled() {
-  [ -n "${SECRET_NO_UPDATE_CHECK:-}" ] && return 1
-  [ -n "${CI:-}" ] && return 1
+  _secret_truthy "${SECRET_NO_UPDATE_CHECK:-}" && return 1
+  _secret_truthy "${CI:-}" && return 1
   return 0
 }
 
@@ -66,15 +76,14 @@ secret_update_check() {
   case "$last" in ''|*[!0-9]*) last=0 ;; esac
   now="$(date +%s)"
   if [ "$((now - last))" -ge "$interval" ]; then
-    # Refresh the cache in the background; this run uses whatever is cached now.
-    # Stamp last-check FIRST so an offline/failed fetch still counts against the
-    # throttle (otherwise every run would re-spawn this). The git call lives in an
-    # `if` condition so its failure can't trip the subshell's inherited `set -e`.
+    # Stamp last-check in the FOREGROUND, before spawning the worker: the throttle
+    # takes effect immediately (no race where several rapid invocations each spawn
+    # a job) and still counts even if the background job never starts.
+    date +%s > "$state/last-check" 2>/dev/null || true
     # GIT_TERMINAL_PROMPT=0 + stdin from /dev/null so a credential/passphrase
     # prompt can never hang the background job or reach the terminal. The grep
     # keeps only exact stable vX.Y.Z tags, excluding pre-releases (v0.3.0-rc1).
-    ( date +%s > "$state/last-check"
-      newest=""
+    ( newest=""
       while IFS= read -r tag; do
         [ -n "$tag" ] || continue
         if [ -z "$newest" ] || _secret_semver_gt "$tag" "$newest"; then newest="$tag"; fi
