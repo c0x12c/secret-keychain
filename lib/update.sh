@@ -21,14 +21,30 @@ secret_update_enabled() {
   return 0
 }
 
+# _secret_semver_gt A B -> 0 iff A is a strictly newer vX.Y.Z than B. Pure bash,
+# no `sort -V` (a GNU extension that older macOS BSD `sort` lacks). Pre-release
+# suffixes are ignored; missing components default to 0.
+_secret_semver_gt() {
+  local a="${1#v}" b="${2#v}" i x y
+  local IFS=.
+  # shellcheck disable=SC2206
+  local -a A=($a) B=($b)
+  for i in 0 1 2; do
+    x="${A[i]:-0}"; y="${B[i]:-0}"
+    x="${x%%[!0-9]*}"; y="${y%%[!0-9]*}"
+    x=$((10#${x:-0})); y=$((10#${y:-0}))
+    [ "$x" -gt "$y" ] && return 0
+    [ "$x" -lt "$y" ] && return 1
+  done
+  return 1
+}
+
 # secret_update_compare CURRENT LATEST -> echo a notice line iff LATEST is a
 # strictly newer semver tag than CURRENT. Pure (output only); the caller renders.
 secret_update_compare() {
-  local current="$1" latest="$2" newest
+  local current="$1" latest="$2"
   [ -n "$current" ] && [ -n "$latest" ] || return 0
-  [ "$current" = "$latest" ] && return 0
-  newest="$(printf '%s\n%s\n' "$current" "$latest" | sort -V | tail -1)"
-  if [ "$newest" = "$latest" ]; then
+  if _secret_semver_gt "$latest" "$current"; then
     printf 'secret-keychain %s available (you have %s) - run: secret-upgrade\n' "$latest" "$current"
   fi
 }
@@ -54,10 +70,13 @@ secret_update_check() {
     # throttle (otherwise every run would re-spawn this). The git call lives in an
     # `if` condition so its failure can't trip the subshell's inherited `set -e`.
     ( date +%s > "$state/last-check"
-      if latest="$(git -C "$repo" ls-remote --tags --refs origin 'v[0-9]*.[0-9]*.[0-9]*' 2>/dev/null \
-          | sed 's#.*/##' | sort -V | tail -1)" && [ -n "$latest" ]; then
-        printf '%s\n' "$latest" > "$state/latest"
-      fi
+      newest=""
+      while IFS= read -r tag; do
+        [ -n "$tag" ] || continue
+        if [ -z "$newest" ] || _secret_semver_gt "$tag" "$newest"; then newest="$tag"; fi
+      done < <(git -C "$repo" ls-remote --tags --refs origin 'v[0-9]*.[0-9]*.[0-9]*' 2>/dev/null \
+                 | sed 's#.*/##')
+      [ -n "$newest" ] && printf '%s\n' "$newest" > "$state/latest"
     ) >/dev/null 2>&1 &
   fi
 

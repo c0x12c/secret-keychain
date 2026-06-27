@@ -42,6 +42,15 @@ teardown() { teardown_secret_env; }
   [ -z "$output" ]
 }
 
+@test "compare: patch and major bumps are detected; pre-release suffix ignored" {
+  run secret_update_compare v0.3.0 v0.3.1
+  [[ "$output" == *"v0.3.1"* ]]
+  run secret_update_compare v0.9.0 v1.0.0
+  [[ "$output" == *"v1.0.0"* ]]
+  run secret_update_compare v0.3.0 v0.3.0-rc1
+  [ -z "$output" ]
+}
+
 @test "enabled by default; disabled under opt-out and CI" {
   run secret_update_enabled
   [ "$status" -eq 0 ]
