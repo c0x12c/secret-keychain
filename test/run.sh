@@ -7,7 +7,7 @@ cd "$here/.."
 
 if command -v shellcheck >/dev/null 2>&1; then
   echo "== shellcheck =="
-  shellcheck bin/* install.sh agent/claude/hooks/*.sh test/stubs/* test/run.sh test/integration/*.sh
+  shellcheck -x bin/* lib/*.sh install.sh agent/claude/hooks/*.sh test/stubs/* test/run.sh test/integration/*.sh
   echo "ok"
 else
   echo "== shellcheck (skipped - not installed) =="

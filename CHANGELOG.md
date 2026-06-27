@@ -3,6 +3,25 @@
 All notable changes to `secret-keychain` adhere to [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2026-06-27
+
+### Added
+- Consistent `-h` / `--help` on every command, with usage and examples; `secret
+  --help` also prints a command index for discoverability.
+- Shared UI layer (`lib/ui.sh`): status lines are colorized when stderr is a TTY
+  and `NO_COLOR` is unset, and stay plain when piped, redirected, or under test.
+  Secret values are never routed through it (still stdout-only).
+- `secret-rm [-f]` confirms before deleting when run interactively; pipes,
+  automation, and agents proceed unprompted (`-f`/`--yes` skips the prompt).
+- `secret-list` now prints an empty-state message and a count footer (on stderr,
+  so `secret-list | grep` stays clean).
+
+### Changed
+- `secret-add` / `secret-paste` distinguish create (`stored:`) from overwrite
+  (`updated:`), surfacing that an existing value is being replaced. `secret-add`
+  also confirms an overwrite interactively (skippable with `-f`; piped input is
+  never blocked).
+
 ## [0.2.1] - 2026-06-26
 
 ### Changed
@@ -54,7 +73,8 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   opt-in real-Keychain integration suite (`RUN_LIVE=1 test/run.sh`).
 - CI: shellcheck + bats on macOS via `.github/workflows/validate.yml`.
 
-[Unreleased]: https://github.com/c0x12c/secret-keychain/compare/v0.2.1...HEAD
+[Unreleased]: https://github.com/c0x12c/secret-keychain/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/c0x12c/secret-keychain/compare/v0.2.1...v0.3.0
 [0.2.1]: https://github.com/c0x12c/secret-keychain/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/c0x12c/secret-keychain/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/c0x12c/secret-keychain/releases/tag/v0.1.0
