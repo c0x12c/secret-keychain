@@ -52,11 +52,13 @@ teardown() { teardown_secret_env; }
 }
 
 @test "enabled by default; disabled under opt-out and CI" {
-  run secret_update_enabled
+  # Neutralize ambient CI/opt-out (GitHub Actions exports CI=true) so the
+  # default-enabled case is tested on its own terms.
+  CI='' SECRET_NO_UPDATE_CHECK='' run secret_update_enabled
   [ "$status" -eq 0 ]
-  SECRET_NO_UPDATE_CHECK=1 run secret_update_enabled
+  CI='' SECRET_NO_UPDATE_CHECK=1 run secret_update_enabled
   [ "$status" -eq 1 ]
-  CI=1 run secret_update_enabled
+  CI=1 SECRET_NO_UPDATE_CHECK='' run secret_update_enabled
   [ "$status" -eq 1 ]
 }
 
