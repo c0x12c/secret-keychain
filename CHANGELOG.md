@@ -3,6 +3,18 @@
 All notable changes to `secret-keychain` adhere to [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2026-06-27
+
+### Added
+- Update notifier: low-frequency commands (`secret-list`, `secret-init`,
+  `secret-add`) print a one-line "new version available" notice to stderr when a
+  newer released tag exists. It is throttled (one network check per day,
+  `SECRET_UPDATE_INTERVAL`), non-blocking (the `git ls-remote` check runs in the
+  background and only writes a cache; the notice appears on the next run), and
+  notify-only - it points you at `secret-upgrade` and never auto-upgrades. Opt
+  out with `SECRET_NO_UPDATE_CHECK=1`; auto-skipped under `CI` and when stderr is
+  not a TTY. The hot-path `secret` fetch is never touched.
+
 ## [0.3.0] - 2026-06-27
 
 ### Added
@@ -73,7 +85,8 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   opt-in real-Keychain integration suite (`RUN_LIVE=1 test/run.sh`).
 - CI: shellcheck + bats on macOS via `.github/workflows/validate.yml`.
 
-[Unreleased]: https://github.com/c0x12c/secret-keychain/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/c0x12c/secret-keychain/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/c0x12c/secret-keychain/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/c0x12c/secret-keychain/compare/v0.2.1...v0.3.0
 [0.2.1]: https://github.com/c0x12c/secret-keychain/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/c0x12c/secret-keychain/compare/v0.1.0...v0.2.0
