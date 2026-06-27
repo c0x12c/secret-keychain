@@ -54,11 +54,12 @@ secret_update_compare() {
 secret_update_check() {
   local repo="${1:-}" state interval last now current latest notice
   secret_update_enabled || return 0
-  [ -t 2 ] || return 0                       # human notice only; never when piped
+  [ -t 2 ] || return 0                       # notice goes to stderr; emit only on a TTY
   [ -n "$repo" ] && [ -d "$repo/.git" ] || return 0
 
   state="${SECRET_STATE_DIR:-$HOME/.claude/state}/secret-update"
   interval="${SECRET_UPDATE_INTERVAL:-86400}"
+  case "$interval" in ''|*[!0-9]*) interval=86400 ;; esac   # ignore a malformed value
   mkdir -p "$state" 2>/dev/null || return 0
 
   last="$(cat "$state/last-check" 2>/dev/null || echo 0)"
@@ -69,15 +70,18 @@ secret_update_check() {
     # Stamp last-check FIRST so an offline/failed fetch still counts against the
     # throttle (otherwise every run would re-spawn this). The git call lives in an
     # `if` condition so its failure can't trip the subshell's inherited `set -e`.
+    # GIT_TERMINAL_PROMPT=0 + stdin from /dev/null so a credential/passphrase
+    # prompt can never hang the background job or reach the terminal. The grep
+    # keeps only exact stable vX.Y.Z tags, excluding pre-releases (v0.3.0-rc1).
     ( date +%s > "$state/last-check"
       newest=""
       while IFS= read -r tag; do
         [ -n "$tag" ] || continue
         if [ -z "$newest" ] || _secret_semver_gt "$tag" "$newest"; then newest="$tag"; fi
-      done < <(git -C "$repo" ls-remote --tags --refs origin 'v[0-9]*.[0-9]*.[0-9]*' 2>/dev/null \
-                 | sed 's#.*/##')
+      done < <(GIT_TERMINAL_PROMPT=0 git -C "$repo" ls-remote --tags --refs origin 'v[0-9]*.[0-9]*.[0-9]*' 2>/dev/null \
+                 | sed 's#.*/##' | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$')
       [ -n "$newest" ] && printf '%s\n' "$newest" > "$state/latest"
-    ) >/dev/null 2>&1 &
+    ) >/dev/null 2>&1 </dev/null &
   fi
 
   latest="$(cat "$state/latest" 2>/dev/null || true)"

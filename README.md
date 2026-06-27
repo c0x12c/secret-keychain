@@ -225,8 +225,10 @@ Low-frequency commands (`secret-list`, `secret-init`, `secret-add`) print a
 one-line notice to stderr when a newer released tag exists, pointing you at
 `secret-upgrade`. The check is throttled (once/day) and non-blocking: it refreshes
 a cache in the background, so the notice appears on a later run and never delays
-the command. It never auto-upgrades, never runs on the hot-path `secret` fetch,
-and stays silent under `CI`, when piped, or with `SECRET_NO_UPDATE_CHECK=1`.
+the command. Because the notice is written to stderr, piping stdout (e.g.
+`secret-list | grep KEY`) stays clean. It never auto-upgrades and never runs on
+the hot-path `secret` fetch. It is suppressed under `CI`, when stderr is not a
+TTY, and with `SECRET_NO_UPDATE_CHECK=1`.
 
 ---
 
