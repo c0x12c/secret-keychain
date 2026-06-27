@@ -3,6 +3,25 @@
 All notable changes to `secret-keychain` adhere to [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- Consistent `-h` / `--help` on every command, with usage and examples; `secret
+  --help` also prints a command index for discoverability.
+- Shared UI layer (`lib/ui.sh`): status lines are colorized when stderr is a TTY
+  and `NO_COLOR` is unset, and stay plain when piped, redirected, or under test.
+  Secret values are never routed through it (still stdout-only).
+- `secret-rm [-f]` confirms before deleting when run interactively; pipes,
+  automation, and agents proceed unprompted (`-f`/`--yes` skips the prompt).
+- `secret-list` now prints an empty-state message and a count footer (on stderr,
+  so `secret-list | grep` stays clean).
+
+### Changed
+- `secret-add` / `secret-paste` distinguish create (`stored:`) from overwrite
+  (`updated:`), surfacing that an existing value is being replaced. `secret-add`
+  also confirms an overwrite interactively (skippable with `-f`; piped input is
+  never blocked).
+
 ## [0.2.1] - 2026-06-26
 
 ### Changed
