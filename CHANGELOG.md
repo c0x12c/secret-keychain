@@ -3,7 +3,7 @@
 All notable changes to `secret-keychain` adhere to [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.4.0] - 2026-06-27
 
 ### Added
 - Update notifier: low-frequency commands (`secret-list`, `secret-init`,
@@ -85,7 +85,8 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   opt-in real-Keychain integration suite (`RUN_LIVE=1 test/run.sh`).
 - CI: shellcheck + bats on macOS via `.github/workflows/validate.yml`.
 
-[Unreleased]: https://github.com/c0x12c/secret-keychain/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/c0x12c/secret-keychain/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/c0x12c/secret-keychain/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/c0x12c/secret-keychain/compare/v0.2.1...v0.3.0
 [0.2.1]: https://github.com/c0x12c/secret-keychain/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/c0x12c/secret-keychain/compare/v0.1.0...v0.2.0
