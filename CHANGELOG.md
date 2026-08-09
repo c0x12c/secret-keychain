@@ -3,6 +3,15 @@
 All notable changes to `secret-keychain` adhere to [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+- CI: the "Changelog touched" gate no longer runs on Dependabot PRs. A
+  dependency bump ships no user-visible behavior, and Dependabot can neither
+  edit `CHANGELOG.md` nor add the `[skip changelog]` escape hatch to a body it
+  doesn't author - so the gate blocked every dependency PR with no action its
+  author could take.
+
 ## [0.4.0] - 2026-06-27
 
 ### Added
