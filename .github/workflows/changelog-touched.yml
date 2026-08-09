@@ -4,9 +4,9 @@
 # the intent is to keep release notes in sync with shipped behavior.
 #
 # Dependabot is exempt: a dependency bump ships no user-visible behavior, and
-# dependabot can neither edit CHANGELOG.md nor put the escape hatch in a body
-# it doesn't author - so without the exemption every dependency PR is blocked
-# forever with no action its author can take.
+# Dependabot can neither edit `CHANGELOG.md` nor put `[skip changelog]` in a PR
+# body it doesn't author - so without the exemption every dependency PR is
+# blocked forever with no action its author can take.
 name: Changelog touched
 
 on:
