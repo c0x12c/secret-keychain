@@ -3,6 +3,12 @@
 All notable changes to `secret-keychain` adhere to [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.2] - 2026-08-10
+
+### Changed
+- CI only, no runtime change: bumped the pinned GitHub Actions -
+  `actions/checkout` v4 to v7 and `softprops/action-gh-release` v2 to v3.
+
 ## [0.4.1] - 2026-08-10
 
 ### Changed
@@ -94,7 +100,8 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   opt-in real-Keychain integration suite (`RUN_LIVE=1 test/run.sh`).
 - CI: shellcheck + bats on macOS via `.github/workflows/validate.yml`.
 
-[Unreleased]: https://github.com/c0x12c/secret-keychain/compare/v0.4.1...HEAD
+[Unreleased]: https://github.com/c0x12c/secret-keychain/compare/v0.4.2...HEAD
+[0.4.2]: https://github.com/c0x12c/secret-keychain/compare/v0.4.1...v0.4.2
 [0.4.1]: https://github.com/c0x12c/secret-keychain/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/c0x12c/secret-keychain/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/c0x12c/secret-keychain/compare/v0.2.1...v0.3.0
