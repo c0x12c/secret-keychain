@@ -37,8 +37,8 @@ cmd="$(cat | jq -r '.tool_input.command // empty' 2>/dev/null || true)"
 # 1. Block secret mutations and the cache-duration control - storing, removing,
 #    upgrading, and changing the autolock window are the human's job. Letting an
 #    agent extend the cache (secret-config) widens its own future blast radius.
-if echo "$cmd" | grep -qE '(^|[;&|[:space:]])secret-(add|paste|rm|load|rotate|upgrade|config)([[:space:]]|$)'; then
-  echo '{"decision":"block","reason":"secret-add / secret-paste / secret-rm / secret-load / secret-rotate / secret-upgrade / secret-config are human-only. The agent may only read secrets via $(secret NAME) or list names with secret-list. secret-config (cache duration) is human-only because longer caches widen the agent blast radius. Ask the user to make the change."}'
+if echo "$cmd" | grep -qE '(^|[;&|[:space:]])secret-(add|paste|rm|rename|load|rotate|upgrade|config)([[:space:]]|$)'; then
+  echo '{"decision":"block","reason":"secret-add / secret-paste / secret-rm / secret-rename / secret-load / secret-rotate / secret-upgrade / secret-config are human-only. The agent may only read secrets via $(secret NAME) or list names with secret-list. secret-config (cache duration) is human-only because longer caches widen the agent blast radius. Ask the user to make the change."}'
   exit 2
 fi
 

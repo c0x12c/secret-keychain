@@ -38,6 +38,20 @@ payload() {
   [[ "$output" == *"human-only"* ]]
 }
 
+@test "blocks secret-rename (agent must not move a secret between names)" {
+  payload "secret-rename OLD_NAME NEW_NAME"
+  run bash "$GATE" < "$BATS_TEST_TMPDIR/p.json"
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"human-only"* ]]
+}
+
+@test "blocks secret-rename when chained after another command" {
+  payload "echo hi && secret-rename A B"
+  run bash "$GATE" < "$BATS_TEST_TMPDIR/p.json"
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"human-only"* ]]
+}
+
 @test "blocks secret-config (agent must not change cache duration)" {
   payload "secret-config 1h --force"
   run bash "$GATE" < "$BATS_TEST_TMPDIR/p.json"

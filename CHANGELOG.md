@@ -3,6 +3,27 @@
 All notable changes to `secret-keychain` adhere to [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2026-08-12
+
+### Added
+- `secret-rename OLD NEW` - rename a secret while keeping its value. Previously
+  this meant `secret-add` under the new name plus `secret-rm` of the old one:
+  two prompts, the value re-typed or re-pasted, and a window where a typo in the
+  new name loses the only copy. The value now moves in-process and never reaches
+  stdout, a pipe, or shell history.
+  - Ordering is add-then-delete: a failed add leaves the original intact, and a
+    failed delete leaves a usable copy under both names (and says so) rather
+    than destroying the only copy.
+  - Refuses to overwrite an existing `NEW` without `-f`, since clobbering would
+    destroy a value the caller never named.
+
+### Security
+- `secret-rename` is human-only, like every other mutation: it is blocked by
+  `agent/claude/hooks/secret-gate.sh` and by `permissions.deny` in
+  `settings.snippet.json`. Shipping the command without this would have left it
+  as the only unguarded mutation, quietly widening what an agent can do to the
+  keychain.
+
 ## [0.4.2] - 2026-08-10
 
 ### Changed

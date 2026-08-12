@@ -67,6 +67,7 @@ To upgrade later, run `secret-upgrade` for the newest release or `secret-upgrade
 | Bulk-load secrets from a file | `secret-load path/to/.env` |
 | View the audit log | `secret-audit` |
 | Delete a secret | `secret-rm NAME` |
+| Rename a secret (keeps the value) | `secret-rename OLD NEW` |
 | Set up the keychain (first run) | `secret-init` |
 | Change the autolock duration | `secret-config <duration>` |
 | Show the current autolock duration | `secret-config --show` |
@@ -268,7 +269,7 @@ See the [agent demo above](#secret-keychain) for the read-safe / blocked-write f
 See [`agent/AGENTS.md`](agent/AGENTS.md) for the rules. The Claude Code guardrails in
 [`agent/claude/`](agent/claude/) ship as three layers:
 
-- `permissions.deny` - hard wall against `secret-add` / `secret-paste` / `secret-rm` / `secret-load` / `secret-rotate`.
+- `permissions.deny` - hard wall against `secret-add` / `secret-paste` / `secret-rm` / `secret-rename` / `secret-load` / `secret-rotate`.
 - `secret-gate.sh` - PreToolUse on `Bash`: blocks mutations and inline secret-shaped strings
   in commands (Stripe, GitHub, npm, JWT, AWS, GCP, Anthropic, OpenAI, connection URIs with
   embedded passwords, curl `-u user:secret`).
