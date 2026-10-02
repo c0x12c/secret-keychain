@@ -14,7 +14,8 @@
 #     settings.snippet.json (hard wall) and secret-gate-write.sh (Edit/Write).
 #
 # Contract: exit 2 + {"decision":"block","reason":...} blocks and shows the reason
-#           to both the model and the user. exit 0 allows.
+#           to both the model and the user. exit 0 allows. A gate that cannot run -
+#           no jq, unreadable input, a crash - answers "ask" instead of allowing.
 # Bypass:   BYPASS_SECRET_GATE=1
 #
 # shellcheck disable=SC2016  # single quotes are intentional: literal $(secret) / JSON
@@ -22,16 +23,29 @@ set -eu
 
 [ "${BYPASS_SECRET_GATE:-0}" = "1" ] && exit 0
 
-# Fail loud, not silent. Missing jq = degraded protection; the user should know.
-if ! command -v jq >/dev/null 2>&1; then
-  echo "secret-gate: jq not on PATH - guardrail DISABLED. Install jq (brew install jq) or set BYPASS_SECRET_GATE=1 to silence." >&2
+GATE_NAME=secret-gate GATE_WHAT=command
+# Fail closed, without becoming a deny-all. Claude Code stops a tool call only on
+# exit 2 or a JSON deny/ask; any other exit, and a plain exit 0, lets it through
+# (https://code.claude.com/docs/en/hooks, "Other exit codes"). So a gate that cannot
+# do its job must say so the one way that still stops the call - an "ask", which puts
+# the decision in front of the user rather than allowing silently or blocking all calls.
+ask() {
+  printf '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"ask","permissionDecisionReason":"%s could not check this %s (%s), so it needs your approval."}}\n' "$GATE_NAME" "$GATE_WHAT" "$1"
   exit 0
-fi
+}
+# shellcheck disable=SC2329  # called by the EXIT trap below
+on_exit() {
+  local rc=$?
+  trap - EXIT
+  # 0 is an allow, 2 is a block; anything else is the gate breaking.
+  [ "$rc" -eq 0 ] || [ "$rc" -eq 2 ] || ask "it failed with exit $rc"
+}
+trap on_exit EXIT
 
-# Defensive: a malformed JSON payload would crash jq under `set -eu`, and Claude
-# Code interprets any non-zero non-2 exit as "block this tool call". Swallow the
-# parse error and fall through to allow - a broken gate must not become a deny-all.
-cmd="$(cat | jq -r '.tool_input.command // empty' 2>/dev/null || true)"
+command -v jq >/dev/null 2>&1 || ask "jq is not on PATH - brew install jq"
+input="$(cat)"
+printf '%s' "$input" | jq -e 'type == "object"' >/dev/null 2>&1 || ask "its input is not a JSON object"
+cmd="$(printf '%s' "$input" | jq -r '.tool_input.command // empty')"
 [ -z "$cmd" ] && exit 0
 
 # 1. Block secret mutations and the cache-duration control - storing, removing,

@@ -3,6 +3,16 @@
 All notable changes to `secret-keychain` adhere to [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+- `secret-gate.sh` and `secret-gate-write.sh` no longer let a call through when they
+  cannot run. Missing `jq`, an unreadable payload, or a crash part-way through used to
+  end in exit 0 (or exit 1 under `set -e`), and Claude Code proceeds with the tool call
+  on any exit but 2 - so the gate allowed silently. They now answer
+  `permissionDecision: "ask"` with the reason, which still never blocks every call.
+  `BYPASS_SECRET_GATE*` behave as before.
+
 ## [0.5.0] - 2026-08-12
 
 ### Added

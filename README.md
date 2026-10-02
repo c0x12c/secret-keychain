@@ -276,8 +276,10 @@ See [`agent/AGENTS.md`](agent/AGENTS.md) for the rules. The Claude Code guardrai
 - `secret-gate-write.sh` - PreToolUse on `Edit | Write | MultiEdit`: same patterns, applied to
   file contents so an agent can't quietly land a secret in `.env` or source.
 
-Both hooks fail loud (stderr warning) if `jq` isn't on `PATH`, so you know when the
-guardrail is degraded rather than silently no-opping.
+Both hooks fail closed: if `jq` isn't on `PATH`, the input can't be read, or the hook
+itself fails, it answers `ask`, so the call waits for your approval instead of going
+through unchecked. Claude Code lets a tool call proceed on any exit other than 2, so a
+warning on stderr alone would not stop it.
 
 ## Tests
 
