@@ -135,14 +135,39 @@ payload() {
   [ "$status" -eq 0 ]
 }
 
-@test "missing jq -> stderr warning, exit 0 (degraded mode)" {
-  # Build a sandbox PATH dir that contains everything the gate needs except jq.
-  # /usr/bin/jq ships with recent macOS, so we can't just narrow PATH to /usr/bin.
+# A gate that cannot run must not allow silently: Claude Code lets the call through
+# on exit 0 and on any exit but 2, so the only safe answer left is an "ask".
+@test "missing jq -> ask, never a silent allow" {
   mkdir -p "$BATS_TEST_TMPDIR/pathsbx"
   for util in bash grep cat echo; do
     ln -sf "$(command -v $util)" "$BATS_TEST_TMPDIR/pathsbx/$util"
   done
-  run bash -c "PATH='$BATS_TEST_TMPDIR/pathsbx' bash '$GATE' </dev/null 2>&1"
+  run bash -c "PATH='$BATS_TEST_TMPDIR/pathsbx' bash '$GATE' </dev/null 2>/dev/null"
   [ "$status" -eq 0 ]
-  [[ "$output" == *"guardrail DISABLED"* ]]
+  [[ "$output" == *'"permissionDecision":"ask"'* ]]
+  [[ "$output" == *"jq is not on PATH"* ]]
+}
+
+@test "a crash part-way through -> ask, never a silent allow" {
+  # jq that passes the input check and then fails: set -e ends the gate with exit 5,
+  # which Claude Code would have treated as an allow.
+  payload "ls"
+  mkdir -p "$BATS_TEST_TMPDIR/pathsbx"
+  for util in bash grep cat echo sed tr; do
+    ln -sf "$(command -v $util)" "$BATS_TEST_TMPDIR/pathsbx/$util"
+  done
+  printf '#!/bin/bash\ncase "$*" in *object*) exit 0 ;; *) exit 5 ;; esac\n' > "$BATS_TEST_TMPDIR/pathsbx/jq"
+  chmod +x "$BATS_TEST_TMPDIR/pathsbx/jq"
+  run bash -c "PATH='$BATS_TEST_TMPDIR/pathsbx' bash '$GATE' < '$BATS_TEST_TMPDIR/p.json' 2>/dev/null"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *'"permissionDecision":"ask"'* ]]
+  [[ "$output" == *"exit 5"* ]]
+}
+
+@test "BYPASS_SECRET_GATE=1 still skips the gate when jq is missing" {
+  mkdir -p "$BATS_TEST_TMPDIR/pathsbx"
+  ln -sf "$(command -v bash)" "$BATS_TEST_TMPDIR/pathsbx/bash"
+  run bash -c "BYPASS_SECRET_GATE=1 PATH='$BATS_TEST_TMPDIR/pathsbx' bash '$GATE' </dev/null"
+  [ "$status" -eq 0 ]
+  [ -z "$output" ]
 }

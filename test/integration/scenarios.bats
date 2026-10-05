@@ -369,22 +369,26 @@ _block_write() {
   [[ "$output" == *"secret-rotate"* ]]
 }
 
-@test "hook contract: malformed JSON payload -> allow, never crash" {
-  # If the gate exits non-zero (because jq crashed on bad JSON), Claude Code
-  # interprets that as "block this tool call" - a broken gate would block
-  # every Bash/Edit/Write attempt. Defensive: swallow jq errors and allow.
+@test "hook contract: malformed JSON payload -> ask, never crash" {
+  # Claude Code lets a tool call through on exit 0 and on any exit but 2, so a gate
+  # that swallowed the parse error and allowed - or crashed - would let anything by.
+  # It must neither crash nor allow: exit 0 with an "ask" for the user.
   echo 'this is not json at all { ] [' > "$BATS_TEST_TMPDIR/p.json"
   run bash "$GATE" < "$BATS_TEST_TMPDIR/p.json"
   [ "$status" -eq 0 ]
+  [[ "$output" == *'"permissionDecision":"ask"'* ]]
   run bash "$GATE_WRITE" < "$BATS_TEST_TMPDIR/p.json"
   [ "$status" -eq 0 ]
+  [[ "$output" == *'"permissionDecision":"ask"'* ]]
 }
 
-@test "hook contract: empty stdin -> allow, never crash" {
+@test "hook contract: empty stdin -> ask, never crash" {
   run bash "$GATE" < /dev/null
   [ "$status" -eq 0 ]
+  [[ "$output" == *'"permissionDecision":"ask"'* ]]
   run bash "$GATE_WRITE" < /dev/null
   [ "$status" -eq 0 ]
+  [[ "$output" == *'"permissionDecision":"ask"'* ]]
 }
 
 @test "hook contract: Write gate accepts MultiEdit shape too" {

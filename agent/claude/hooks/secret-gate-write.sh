@@ -6,6 +6,7 @@
 # unmonitored. Same vendor patterns as secret-gate.sh.
 #
 # Contract: exit 2 + {"decision":"block","reason":...} blocks the write. exit 0 allows.
+#           A gate that cannot run - no jq, unreadable input, a crash - answers "ask".
 # Bypass:   BYPASS_SECRET_GATE_WRITE=1
 #
 # shellcheck disable=SC2016  # single quotes are intentional: literal $(secret) / JSON
@@ -13,26 +14,39 @@ set -eu
 
 [ "${BYPASS_SECRET_GATE_WRITE:-0}" = "1" ] && exit 0
 
-if ! command -v jq >/dev/null 2>&1; then
-  echo "secret-gate-write: jq not on PATH - guardrail DISABLED. Install jq (brew install jq) or set BYPASS_SECRET_GATE_WRITE=1 to silence." >&2
+GATE_NAME=secret-gate-write GATE_WHAT=write
+# Fail closed, without becoming a deny-all. Claude Code stops a tool call only on
+# exit 2 or a JSON deny/ask; any other exit, and a plain exit 0, lets it through
+# (https://code.claude.com/docs/en/hooks, "Other exit codes"). So a gate that cannot
+# do its job must say so the one way that still stops the call - an "ask", which puts
+# the decision in front of the user rather than allowing silently or blocking all calls.
+ask() {
+  printf '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"ask","permissionDecisionReason":"%s could not check this %s (%s), so it needs your approval."}}\n' "$GATE_NAME" "$GATE_WHAT" "$1"
   exit 0
-fi
+}
+# shellcheck disable=SC2329  # called by the EXIT trap below
+on_exit() {
+  local rc=$?
+  trap - EXIT
+  # 0 is an allow, 2 is a block; anything else is the gate breaking.
+  [ "$rc" -eq 0 ] || [ "$rc" -eq 2 ] || ask "it failed with exit $rc"
+}
+trap on_exit EXIT
 
+command -v jq >/dev/null 2>&1 || ask "jq is not on PATH - brew install jq"
+input="$(cat)"
+printf '%s' "$input" | jq -e 'type == "object"' >/dev/null 2>&1 || ask "its input is not a JSON object"
 # Gather the content payloads from any of Write/Edit/MultiEdit shapes:
 #   Write:     .tool_input.content
 #   Edit:      .tool_input.new_string  (also old_string - skip; we only care about what lands on disk)
 #   MultiEdit: .tool_input.edits[].new_string
-# Defensive: a malformed payload would crash jq under `set -eu`, and Claude Code
-# interprets any non-zero non-2 exit as "block this tool call". Swallow the parse
-# error and fall through to allow - a broken gate must not become a deny-all.
-payload="$(cat)"
-content="$(printf '%s' "$payload" | jq -r '
+content="$(printf '%s' "$input" | jq -r '
   [
     (.tool_input.content // empty),
     (.tool_input.new_string // empty),
     (.tool_input.edits // [] | map(.new_string // empty) | join("\n"))
   ] | join("\n")
-' 2>/dev/null || true)"
+')"
 [ -z "$content" ] && exit 0
 
 # Same pattern set as secret-gate.sh. Keep these in sync.
