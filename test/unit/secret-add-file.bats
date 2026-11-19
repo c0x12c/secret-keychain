@@ -22,11 +22,60 @@ assert_quiet() {
   [ "$(security find-generic-password -s shared/test -w)" = "$VALUE" ]
 }
 
+@test "raw store strips one trailing newline" {
+  printf '\n' >> "$FILE"
+  security() {
+    if [ "$1" = add-generic-password ]; then
+      while [ "$#" -gt 0 ]; do
+        if [ "$1" = -w ]; then
+          [ "$2" = 'synthetic-file-content-42' ] || return 1
+          break
+        fi
+        shift
+      done
+      return 0
+    fi
+    printf '%s\n' 'synthetic-file-content-42'
+  }
+  export -f security
+  run secret-add-file shared/test "$FILE"
+  [ "$status" -eq 0 ]
+  [ "$(security find-generic-password -s shared/test -w)" = "$VALUE" ]
+  assert_quiet
+}
+
+@test "raw multiline file is rejected before keychain access and retained" {
+  printf '%s\n%s\n' '-----BEGIN DUMMY-----' '-----END DUMMY-----' > "$FILE"
+  security() { touch "$SECRET_STATE_DIR/keychain-touched"; return 1; }
+  export -f security
+  run secret-add-file --delete-source shared/test "$FILE"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"FILE has more than one line or non-printable bytes; keychain would return it as hex. Use --base64."* ]]
+  [ ! -e "$SECRET_STATE_DIR/keychain-touched" ]
+  [ ! -s "$SECRET_STORE" ]
+  [ -f "$FILE" ]
+}
+
+@test "raw nonprintable bytes are rejected before keychain access and retained" {
+  security() { touch "$SECRET_STATE_DIR/keychain-touched"; return 1; }
+  export -f security
+  for control in '\t' '\001' '\000' '\200'; do
+    printf 'dummy%btext' "$control" > "$FILE"
+    run secret-add-file --delete-source shared/test "$FILE"
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"Use --base64."* ]]
+    [ ! -e "$SECRET_STATE_DIR/keychain-touched" ]
+    [ ! -s "$SECRET_STORE" ]
+    [ -f "$FILE" ]
+  done
+}
+
 @test "base64 store is one line and decodes to the source" {
-  printf '\nsecond line\n' >> "$FILE"
+  printf '%s\n%s\n' '-----BEGIN DUMMY-----' '-----END DUMMY-----' > "$FILE"
   run secret-add-file --base64 shared/test "$FILE"
   [ "$status" -eq 0 ]
   [[ "$output" == *"base64"* ]]
+  [[ "$output" == *"verified"* ]]
   assert_quiet
   encoded="$(security find-generic-password -s shared/test -w)"
   [[ "$encoded" != *$'\n'* ]]

@@ -9,6 +9,7 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Human-only `secret-add-file [--base64] [--delete-source] NAME FILE` stores a file and verifies its SHA-256 readback.
   Previously, private keys needed manual base64 encoding into the clipboard before `secret-paste`, and downloads were easy to leave behind.
   Optional source deletion happens only after verification; values and digests are never printed.
+  Raw mode takes a single printable line; use `--base64` for key files.
 
 ## [0.5.0] - 2026-08-12
 
