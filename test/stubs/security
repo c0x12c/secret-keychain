@@ -30,9 +30,10 @@ case "$cmd" in
     printf '%s\t%s\n' "$svc" "$val" >> "$store"
     ;;
   find-generic-password)
+    [ "${SECURITY_STUB_UNREADABLE:-0}" != "1" ] || exit 36
     svc="$(get_field -s "$@")"
     line="$(grep "^${svc}	" "$store" 2>/dev/null || true)"
-    [ -n "$line" ] || exit 1
+    [ -n "$line" ] || exit 44
     printf '%s\n' "${line#*	}"
     ;;
   delete-generic-password)

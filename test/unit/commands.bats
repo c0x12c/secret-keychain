@@ -38,6 +38,65 @@ teardown() { teardown_secret_env; }
   [[ "$output" == *"secret-add NOPE"* ]]
 }
 
+@test "secret: unreadable keychain -> exit 2 without add hint or value" {
+  echo "private-value" | secret-add API_KEY
+  export SECURITY_STUB_UNREADABLE=1
+  run secret API_KEY
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"cannot read 'API_KEY' from test.keychain (security exit 36)"* ]]
+  [[ "$output" == *"locked"* ]]
+  [[ "$output" == *"security unlock-keychain test.keychain"* ]]
+  [[ "$output" != *"secret-add"* ]]
+  [[ "$output" != *"private-value"* ]]
+}
+
+@test "secret-add: unreadable keychain refuses new and existing names without writes" {
+  echo "private-value" | secret-add API_KEY
+  cp "$SECRET_STORE" "$BATS_TEST_TMPDIR/before"
+  export SECURITY_STUB_UNREADABLE=1
+  for name in API_KEY NEW_KEY; do
+    run bash -c 'printf replacement | secret-add "$1"' _ "$name"
+    [ "$status" -eq 2 ]
+    [[ "$output" == *"cannot read"* ]]
+    [[ "$output" == *"locked"* ]]
+    [[ "$output" != *"private-value"* ]]
+    cmp "$SECRET_STORE" "$BATS_TEST_TMPDIR/before"
+  done
+}
+
+@test "secret-rename: unreadable keychain refuses without changing names or values" {
+  echo "private-value" | secret-add OLD_KEY
+  cp "$SECRET_STORE" "$BATS_TEST_TMPDIR/before"
+  export SECURITY_STUB_UNREADABLE=1
+  run secret-rename OLD_KEY NEW_KEY
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"cannot read 'OLD_KEY'"* ]]
+  [[ "$output" == *"locked"* ]]
+  [[ "$output" != *"not found"* ]]
+  [[ "$output" != *"private-value"* ]]
+  cmp "$SECRET_STORE" "$BATS_TEST_TMPDIR/before"
+}
+
+@test "remaining writers: unreadable keychain refuses without store changes" {
+  echo "private-value" | secret-add API_KEY
+  cp "$SECRET_STORE" "$BATS_TEST_TMPDIR/before"
+  printf replacement > "$BATS_TEST_TMPDIR/value"
+  export SECRET_CLIP=replacement
+  export SECURITY_STUB_UNREADABLE=1
+  run secret-rotate API_KEY --from-clipboard
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"cannot read"* ]]
+  cmp "$SECRET_STORE" "$BATS_TEST_TMPDIR/before"
+  run secret-paste API_KEY
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"cannot read"* ]]
+  cmp "$SECRET_STORE" "$BATS_TEST_TMPDIR/before"
+  run secret-add-file API_KEY "$BATS_TEST_TMPDIR/value"
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"cannot read"* ]]
+  cmp "$SECRET_STORE" "$BATS_TEST_TMPDIR/before"
+}
+
 @test "secret-list prints names only, never values" {
   echo "v1" | secret-add ALPHA
   echo "v2" | secret-add BETA

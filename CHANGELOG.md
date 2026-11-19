@@ -3,6 +3,11 @@
 All notable changes to `secret-keychain` adhere to [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+- Locked or unreadable keychains now report a read failure instead of a missing secret, and refuse writes that depend on a lookup.
+
 ## [0.6.0] - 2026-11-19
 
 ### Added
