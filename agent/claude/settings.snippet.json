@@ -9,6 +9,8 @@
       "Bash(secret-audit *)"
     ],
     "deny": [
+      "Bash(secret-add-file)",
+      "Bash(secret-add-file *)",
       "Bash(secret-add)",
       "Bash(secret-add *)",
       "Bash(secret-paste)",

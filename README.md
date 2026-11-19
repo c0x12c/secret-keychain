@@ -59,6 +59,7 @@ To upgrade later, run `secret-upgrade` for the newest release or `secret-upgrade
 | You want to… | Run this |
 |---|---|
 | Store a secret (hidden prompt) | `secret-add NAME` |
+| Store a file, optionally base64-encoded | `secret-add-file [--base64] [--delete-source] NAME FILE` |
 | Store a secret from the clipboard (safest) | copy the value, then `secret-paste NAME` |
 | Update / rotate a secret | `secret-rotate NAME` |
 | Print a secret | `secret NAME` |
@@ -101,6 +102,11 @@ secret-rotate STRIPE_PROD
 **Bulk-load** several secrets from a file:
 ```sh
 secret-load .env.production
+```
+
+**From a private key file**, verifying storage before deleting the download:
+```sh
+secret-add-file --base64 --delete-source shared/example-app-key ~/Downloads/app.private-key.pem
 ```
 
 ### …use a secret in a command?

@@ -27,7 +27,7 @@ If a secret is missing, **ask the human to add it** - do not run `secret-add`.
 |---|---|
 | `secret NAME` inside `$(...)` for a command | ✅ yes |
 | `secret-list` | ✅ yes |
-| `secret-add` / `secret-paste` / `secret-rm` | ❌ no - human only |
+| `secret-add` / `secret-add-file` / `secret-paste` / `secret-rm` / `secret-rename` | ❌ no - human only |
 | `secret-config` (set autolock duration) | ❌ no - human only |
 | `secret-upgrade` (self-modify tooling) | ❌ no - human only |
 | `echo`/`cat`/`tee` a secret value, or write it into a file | ❌ no |
@@ -49,7 +49,7 @@ ergonomics: longer caches don't hide your fetches.
 Three layers back the rules above, installed from this directory:
 
 - **`permissions.deny`** (in `settings.snippet.json`) - a hard wall: the agent
-  cannot run `secret-add` / `secret-paste` / `secret-rm` / `secret-upgrade` /
+  cannot run `secret-add` / `secret-add-file` / `secret-paste` / `secret-rm` / `secret-rename` / `secret-upgrade` /
   `secret-config` at all.
 - **`hooks/secret-gate.sh`** (PreToolUse on Bash) - blocks the mutation and
   cache-duration commands with an explanatory message, and blocks commands
@@ -89,5 +89,5 @@ exit 0 (degraded mode, visible to the user).
 
 The `$(secret NAME)`-only discipline is agent-neutral. Any agent that supports
 pre-execution command hooks or a command allow/deny list can reproduce the two
-layers: deny `secret-add`/`secret-paste`/`secret-rm`, allow `secret`/`secret-list`,
+layers: deny `secret-add`/`secret-add-file`/`secret-paste`/`secret-rm`/`secret-rename`, allow `secret`/`secret-list`,
 and reject commands carrying inline secret-shaped strings.

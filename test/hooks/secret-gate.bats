@@ -52,6 +52,17 @@ payload() {
   [[ "$output" == *"human-only"* ]]
 }
 
+@test "blocks secret-add-file directly and in a command chain" {
+  payload "secret-add-file --base64 --delete-source shared/test input.pem"
+  run bash "$GATE" < "$BATS_TEST_TMPDIR/p.json"
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"human-only"* ]]
+  payload "echo ready && secret-add-file shared/test input.pem"
+  run bash "$GATE" < "$BATS_TEST_TMPDIR/p.json"
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"human-only"* ]]
+}
+
 @test "blocks secret-config (agent must not change cache duration)" {
   payload "secret-config 1h --force"
   run bash "$GATE" < "$BATS_TEST_TMPDIR/p.json"

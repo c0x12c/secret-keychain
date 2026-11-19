@@ -3,6 +3,13 @@
 All notable changes to `secret-keychain` adhere to [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0] - 2026-11-19
+
+### Added
+- Human-only `secret-add-file [--base64] [--delete-source] NAME FILE` stores a file and verifies its SHA-256 readback.
+  Previously, private keys needed manual base64 encoding into the clipboard before `secret-paste`, and downloads were easy to leave behind.
+  Optional source deletion happens only after verification; values and digests are never printed.
+
 ## [0.5.0] - 2026-08-12
 
 ### Added
